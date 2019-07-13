@@ -8,11 +8,12 @@
 // -----------------------------------------------------------------------------
 // Global Consts/Classes
 // -----------------------------------------------------------------------------
-def owner = 'sector14'
-def repo = 'replay_console'
+def owner = 'takasa'
+def repo = 'replay_common'
 
 class Core {
   String name
+  String path
   String[] targets
 }
 
@@ -20,10 +21,12 @@ class Core {
 // Methods
 // -----------------------------------------------------------------------------
 
-def createJob(owner, repo, name, target) {
-  folder("${owner}-${repo}/${name}")
+def createJob(owner, repo, name, path, target) {
+  folder("${owner}/${name}-${target}")
 
-  def jobName = "${owner}-${repo}/${name}/${target}"
+  // Path must end with unchanged repo name, otherwise hardcoded usage
+  // of ../../../replay_common by the build system will fail.
+  String jobName = "${owner}/${name}-${target}/${repo}"
 
   job(jobName) {
     description("Autocreated build job for ${jobName}")
@@ -44,30 +47,46 @@ def createJob(owner, repo, name, target) {
       gitHubPushTrigger()
     }
     steps {
+      // TODO: Handle multi-scm for replay_common local settings
       shell("""\
             python --version
 
-            python ${name}/rmake.py flow infer --target ${target}
+            # Create local settings if this is a replay_common repo
+            [ -d "scripts/" ] && cat << EOF > scripts/local_settings.py
+            # Local paths auto generated via jenkins project build script
+            ISE_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/'
+            ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
+
+            MODELSIM_PATH = ''
+            QUARTUS_PATH = '/opt/intelFPGA_lite/18.1/quartus/bin/'
+
+            # if UNISIM_PATH is empty, a local (tb/sim) library will be created
+            UNISIM_PATH = None
+
+            EOF
+
+            cd ${path}
+            python rmake.py infer --target ${target}
             exit \$?
             """.stripIndent())
     }
     publishers {
       archiveArtifacts {
-        pattern("${name}/sdcard/**")
+        pattern("${path}/sdcard/**")
         onlyIfSuccessful()
       }
-      slackNotifier {
-        startNotification(true)
-        notifyAborted(true)
-        notifyBackToNormal(true)
-        notifyEveryFailure(true)
-        notifyFailure(true)
-        notifyNotBuilt(true)
-        notifyRegression(true)
-        notifyRepeatedFailure(true)
-        notifySuccess(true)
-        notifyUnstable(true)
-      }
+      // slackNotifier {
+      //   startNotification(true)
+      //   notifyAborted(true)
+      //   notifyBackToNormal(true)
+      //   notifyEveryFailure(true)
+      //   notifyFailure(true)
+      //   notifyNotBuilt(true)
+      //   notifyRegression(true)
+      //   notifyRepeatedFailure(true)
+      //   notifySuccess(true)
+      //   notifyUnstable(true)
+      // }
     }
     wrappers {
       configure { node ->
@@ -98,26 +117,27 @@ def coresFile = readFileFromWorkspace('_cores.txt')
 
 // Extract core and supported targets
 coresFile.eachLine {
-  def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s*(?<name>\w+)/
+  def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
 
   if (matcher.matches()) {
-    def name = matcher.group('name')
+    def path = matcher.group('path')
+    def name = path.replaceAll('/','_')
     def targets = []
     matcher.group('targets').findAll(/\[(\w+?)\]/) {
       target -> targets << target[1]
     }
-    cores << new Core(name: name, targets: targets)
+    cores << new Core(name: name, path: path, targets: targets)
   }
   else
     out.println("Match failure for _core.txt line: ${it}")
 }
 
-// Base repo folder should always exist
-folder("${owner}-${repo}")
+// Base folder should always exist
+folder(owner)
 
 cores.each { core ->
   core.targets.each { target ->
-    createJob(owner, repo, core.name, target)
+    createJob(owner, repo, core.name, core.path, target)
   }
 }
 
