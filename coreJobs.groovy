@@ -9,7 +9,7 @@
 // Global Consts/Classes
 // -----------------------------------------------------------------------------
 def owner = 'takasa'
-def repo = 'replay_common'
+def repo = 'replay_console'
 
 class Core {
   String name
@@ -22,23 +22,38 @@ class Core {
 // -----------------------------------------------------------------------------
 
 def createJob(owner, repo, name, path, target) {
-  folder("${owner}/${name}-${target}")
+  folder("${owner}-${repo}/${name}")
 
-  // Path must end with unchanged repo name, otherwise hardcoded usage
-  // of ../../../replay_common by the build system will fail.
-  String jobName = "${owner}/${name}-${target}/${repo}"
+  String jobName = "${owner}-${repo}/${name}/${target}"
 
   job(jobName) {
     description("Autocreated build job for ${jobName}")
     properties {
       githubProjectUrl("https://github.com/${owner}/${repo}")
     }
-    scm {
+    multiscm {
+      // Jenkins is not able to determine other repo build deps currently.
+      // We assume only replay_common exists as a dep and that every job
+      // except for replay_common itself, depends on it.
+      if (repo != "replay_common") {
+        git {
+          remote {
+            url("git@github.com:${owner}/replay_common.git")
+            credentials("${owner}_replay_common")
+          }
+          extensions {
+            relativeTargetDirectory('replay_common')
+          }
+          branch('master')
+        }
+      }
       git {
         remote {
-          // TODO: name() does not appear to work?
           url("git@github.com:${owner}/${repo}.git")
           credentials("${owner}_${repo}")
+        }
+        extensions {
+          relativeTargetDirectory(repo)
         }
         branch('master')
       }
@@ -47,12 +62,11 @@ def createJob(owner, repo, name, path, target) {
       gitHubPushTrigger()
     }
     steps {
-      // TODO: Handle multi-scm for replay_common local settings
       shell("""\
             python --version
 
             # Create local settings if this is a replay_common repo
-            [ -d "scripts/" ] && cat << EOF > scripts/local_settings.py
+            [ -d "replay_common/scripts/" ] && cat << EOF > replay_common/scripts/local_settings.py
             # Local paths auto generated via jenkins project build script
             ISE_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/'
             ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
@@ -65,14 +79,14 @@ def createJob(owner, repo, name, path, target) {
 
             EOF
 
-            cd ${path}
+            cd ${repo}/${path}
             python rmake.py infer --target ${target}
             exit \$?
             """.stripIndent())
     }
     publishers {
       archiveArtifacts {
-        pattern("${path}/sdcard/**")
+        pattern("${repo}/${path}/sdcard/**")
         onlyIfSuccessful()
       }
       // slackNotifier {
@@ -133,7 +147,7 @@ coresFile.eachLine {
 }
 
 // Base folder should always exist
-folder(owner)
+folder("${owner}-${repo}")
 
 cores.each { core ->
   core.targets.each { target ->
