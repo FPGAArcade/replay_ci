@@ -1,15 +1,17 @@
 // Automated Core/Target job creation/removal
 //
 // Note: Assumes private repo usage currently and that credentials for access
-// have been configured using "<owner>_<repo_name>" as the ID format
+// have been configured using "<repo_owner>_<repo_name>" as the ID format
+// All seeded repos are assumed to require a dependancy on replay_common and
+// only replay_common.
 //
-// https://github.com/jenkinsci/job-dsl-plugin/wiki/Job-DSL-Commands#logging
-//
+// Params:
+//   String repo_owner - github repo owner e.g takasa
+//   String repo_name  - github repo name e.g replay_common
+
 // -----------------------------------------------------------------------------
-// Global Consts/Classes
+// Classes
 // -----------------------------------------------------------------------------
-def owner = 'takasa'
-def repo = 'replay_console'
 
 class Core {
   String name
@@ -21,25 +23,25 @@ class Core {
 // Methods
 // -----------------------------------------------------------------------------
 
-def createJob(owner, repo, name, path, target) {
-  folder("${owner}-${repo}/${name}")
+def createJob(repo_owner, repo_name, name, path, target) {
+  folder("${repo_owner}-${repo_name}/${name}")
 
-  String jobName = "${owner}-${repo}/${name}/${target}"
+  String jobName = "${repo_owner}-${repo_name}/${name}/${target}"
 
   job(jobName) {
     description("Autocreated build job for ${jobName}")
     properties {
-      githubProjectUrl("https://github.com/${owner}/${repo}")
+      githubProjectUrl("https://github.com/${repo_owner}/${repo_name}")
     }
     multiscm {
       // Jenkins is not able to determine other repo build deps currently.
       // We assume only replay_common exists as a dep and that every job
       // except for replay_common itself, depends on it.
-      if (repo != "replay_common") {
+      if (repo_name != "replay_common") {
         git {
           remote {
-            url("git@github.com:${owner}/replay_common.git")
-            credentials("${owner}_replay_common")
+            url("git@github.com:${repo_owner}/replay_common.git")
+            credentials("${repo_owner}_replay_common")
           }
           extensions {
             relativeTargetDirectory('replay_common')
@@ -49,11 +51,11 @@ def createJob(owner, repo, name, path, target) {
       }
       git {
         remote {
-          url("git@github.com:${owner}/${repo}.git")
-          credentials("${owner}_${repo}")
+          url("git@github.com:${repo_owner}/${repo_name}.git")
+          credentials("${repo_owner}_${repo_name}")
         }
         extensions {
-          relativeTargetDirectory(repo)
+          relativeTargetDirectory(repo_name)
         }
         branch('master')
       }
@@ -79,14 +81,14 @@ def createJob(owner, repo, name, path, target) {
 
             EOF
 
-            cd ${repo}/${path}
+            cd ${repo_name}/${path}
             python rmake.py infer --target ${target}
             exit \$?
             """.stripIndent())
     }
     publishers {
       archiveArtifacts {
-        pattern("${repo}/${path}/sdcard/**")
+        pattern("${repo_name}/${path}/sdcard/**")
         onlyIfSuccessful()
       }
       // slackNotifier {
@@ -125,8 +127,6 @@ def createJob(owner, repo, name, path, target) {
 // -----------------------------------------------------------------------------
 def cores = []
 
-// TODO: Have a seed job repo that checks out and sets up jobs for
-//       several listed repos rather than requiring this script be run against each repo?
 def coresFile = readFileFromWorkspace('_cores.txt')
 
 // Extract core and supported targets
@@ -147,11 +147,11 @@ coresFile.eachLine {
 }
 
 // Base folder should always exist
-folder("${owner}-${repo}")
+folder("${repo_owner}-${repo_name}")
 
 cores.each { core ->
   core.targets.each { target ->
-    createJob(owner, repo, core.name, core.path, target)
+    createJob(repo_owner, repo_name, core.name, core.path, target)
   }
 }
 
