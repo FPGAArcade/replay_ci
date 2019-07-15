@@ -63,7 +63,7 @@ coresFile.eachLine {
 }
 
 // Base folder should always exist
-folder("${repo.owner}-${repo.name}")
+folder("${repo_info.owner}-${repo_info.name}")
 
 cores.each { core ->
   core.targets.each { target ->
