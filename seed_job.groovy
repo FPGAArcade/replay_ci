@@ -45,6 +45,7 @@ def createJob(repo_owner, repo_name, name, path, target) {
           }
           extensions {
             relativeTargetDirectory('replay_common')
+            // TODO: Trigger build only if framework/lib changes?
           }
           branch('master')
         }
@@ -56,6 +57,10 @@ def createJob(repo_owner, repo_name, name, path, target) {
         }
         extensions {
           relativeTargetDirectory(repo_name)
+          pathRestriction {
+            includedRegions("${path}/.*")
+            excludedRegions('')
+          }
         }
         branch('master')
       }

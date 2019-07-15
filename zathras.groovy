@@ -4,17 +4,21 @@
 // Setup as a free style job with webhook trigger on replay_ci
 // Note: CI only supports repos on github currently.
 //       Assumptions are made that credentials exist with ${owner}_${repo} format
+// Note2: Credentials and git url case must match the github case as the webhook
+//        is case sensitive.
 
 // TODO: read from a workspace repos.json to avoid script reauth on changes.
 //       Include credentials ID here when required
 def repos = [
   [owner: 'takasa', name: 'replay_common', url: 'git@github.com:Takasa/replay_common.git'],
-  [owner: 'takasa', name: 'replay_console', url: 'git@github.com:Takasa/replay_console.git']
+  [owner: 'takasa', name: 'replay_console', url: 'git@github.com:Takasa/replay_console.git'],
+
+  [owner: 'sector14', name: 'replay_common', url: 'git@github.com:Sector14/replay_common.git'],
 ]
 
 folder('seed_jobs')
 
-String seed_script = readFileFromWorkspace('coreJobs.groovy')
+String seed_script = readFileFromWorkspace('seed_job.groovy')
 
 repos.each { repo ->
 
@@ -36,6 +40,12 @@ repos.each { repo ->
           credentials("${repo.owner}_${repo.name}")
         }
         branch('master')
+        extensions {
+          pathRestriction {
+            includedRegions('_cores.txt')
+            excludedRegions('')
+          }
+        }
       }
     }
     triggers {
