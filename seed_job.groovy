@@ -8,6 +8,7 @@
 // Required Params:
 //   String param_repo_owner - github repo owner e.g takasa
 //   String param_repo_name  - github repo name e.g replay_common
+//   String param_repo_url   - https or ssh url of git repo
 //   CredentialID param_repo_credential_id - Jenkins credential for repo access (may be empty)
 
 // -----------------------------------------------------------------------------
@@ -24,7 +25,8 @@ class Core {
 // Methods
 // -----------------------------------------------------------------------------
 
-def createJob(repo_owner, repo_name, repo_credential_id, core_name, core_path, core_target) {
+// TODO: Refactor job params into repo, core and queue
+def createJob(repo_owner, repo_name, repo_credential_id, repo_url, core_name, core_path, core_target) {
   folder("${repo_owner}-${repo_name}/${core_name}")
 
   String jobName = "${repo_owner}-${repo_name}/${core_name}/${core_target}"
@@ -53,7 +55,7 @@ def createJob(repo_owner, repo_name, repo_credential_id, core_name, core_path, c
       }
       git {
         remote {
-          url("git@github.com:${repo_owner}/${repo_name}.git")
+          url(repo_url)
           credentials(repo_credential_id)
         }
         extensions {
@@ -162,7 +164,8 @@ folder("${param_repo_owner}-${param_repo_name}")
 cores.each { core ->
   core.targets.each { target ->
     String jobName = createJob(param_repo_owner, param_repo_name,
-                               param_repo_credential_id, core.name, core.path, target)
+                               param_repo_credential_id, param_repo_url,
+                               core.name, core.path, target)
 
     // If new job created rather than updated/removed, trigger build
     if (!jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {

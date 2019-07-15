@@ -38,14 +38,14 @@ repos.each { repo ->
   job(job_name) {
     description("Seed job for ${repo.owner}/${repo.name}.")
     parameters {
-      // TODO: Don't really want these as ui editable params, just using this
-      //       to pass owner and repo through to the child seed job. Better option?
+      // REVIEW: Don't really want these as ui editable params, better option?
       stringParam('param_repo_owner', repo.owner, 'Do NOT modify')
       stringParam('param_repo_name', repo.name, 'Do NOT modify')
       credentialsParam('param_repo_credential_id') {
         description('Do NOT modify')
         defaultValue(repo.credentialId)
       }
+      stringParam('param_repo_url', repo.url, 'Do Not modify')
     }
     // TODO: Switch to multiscm with replay_ci as extra repo
     scm {
