@@ -73,6 +73,7 @@ repos.each { repo ->
         removedViewAction('DELETE')
         removedConfigFilesAction('DELETE')
         failOnSeedCollision(true)
+        sandbox(true)
       }
     }
     logRotator {
