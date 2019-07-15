@@ -1,13 +1,14 @@
 // Automated Core/Target job creation/removal
 //
 // Note: Assumes private repo usage currently and that credentials for access
-// have been configured using "<repo_owner>_<repo_name>" as the ID format
+// have been configured using "<param_repo_owner>_<param_repo_name>" as the ID format
 // All seeded repos are assumed to require a dependancy on replay_common and
 // only replay_common.
 //
-// Params:
-//   String repo_owner - github repo owner e.g takasa
-//   String repo_name  - github repo name e.g replay_common
+// Required Params:
+//   String param_repo_owner - github repo owner e.g takasa
+//   String param_repo_name  - github repo name e.g replay_common
+//   CredentialID param_repo_credential_id - Jenkins credential for repo access (may be empty)
 
 // -----------------------------------------------------------------------------
 // Classes
@@ -23,7 +24,7 @@ class Core {
 // Methods
 // -----------------------------------------------------------------------------
 
-def createJob(repo_owner, repo_name, name, path, target) {
+def createJob(repo_owner, repo_name, repo_credential_id, name, path, target) {
   folder("${repo_owner}-${repo_name}/${name}")
 
   String jobName = "${repo_owner}-${repo_name}/${name}/${target}"
@@ -40,8 +41,8 @@ def createJob(repo_owner, repo_name, name, path, target) {
       if (repo_name != "replay_common") {
         git {
           remote {
-            url("git@github.com:${repo_owner}/replay_common.git")
-            credentials("${repo_owner}_replay_common")
+            url("git@github.com:Takasa/replay_common.git")
+            credentials("takasa_replay_common")
           }
           extensions {
             relativeTargetDirectory('replay_common')
@@ -53,7 +54,7 @@ def createJob(repo_owner, repo_name, name, path, target) {
       git {
         remote {
           url("git@github.com:${repo_owner}/${repo_name}.git")
-          credentials("${repo_owner}_${repo_name}")
+          credentials(repo_credential_id)
         }
         extensions {
           relativeTargetDirectory(repo_name)
@@ -142,6 +143,8 @@ coresFile.eachLine {
 
   if (matcher.matches()) {
     def path = matcher.group('path')
+    // TODO: Base name on the last part of any path and fail job creation
+    //       if any duplicates detected
     def name = path.replaceAll('/','_')
     def targets = []
     matcher.group('targets').findAll(/\[(\w+?)\]/) {
@@ -154,11 +157,12 @@ coresFile.eachLine {
 }
 
 // Base folder should always exist
-folder("${repo_owner}-${repo_name}")
+folder("${param_repo_owner}-${param_repo_name}")
 
 cores.each { core ->
   core.targets.each { target ->
-    String jobName = createJob(repo_owner, repo_name, core.name, core.path, target)
+    String jobName = createJob(param_repo_owner, param_repo_name,
+                               param_repo_credential_id, core.name, core.path, target)
 
     // If new job created rather than updated/removed, trigger build
     if (!jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {

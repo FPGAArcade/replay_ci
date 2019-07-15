@@ -10,10 +10,21 @@
 // TODO: read from a workspace repos.json to avoid script reauth on changes.
 //       Include credentials ID here when required
 def repos = [
-  [owner: 'takasa', name: 'replay_common', url: 'git@github.com:Takasa/replay_common.git'],
-  [owner: 'takasa', name: 'replay_console', url: 'git@github.com:Takasa/replay_console.git'],
+  // [owner: 'takasa', name: 'replay_common', url: 'git@github.com:Takasa/replay_common.git'],
+  // [owner: 'takasa', name: 'replay_console', url: 'git@github.com:Takasa/replay_console.git'],
 
-  [owner: 'Sector14', name: 'replay_common', url: 'git@github.com:Sector14/replay_common.git'],
+  [
+    owner: 'Sector14',
+    name: 'replay_common',
+    url: 'git@github.com:Sector14/replay_common.git',
+    credentialId: 'Sector14_replay_common'
+  ],
+
+  // [
+  //   owner: 'Sector14',
+  //   name: 'acorn_electron',
+  //   url: 'https://github.com/Sector14/acorn-electron-core.git'
+  // ],
 ]
 
 folder('seed_jobs')
@@ -29,8 +40,12 @@ repos.each { repo ->
     parameters {
       // TODO: Don't really want these as ui editable params, just using this
       //       to pass owner and repo through to the child seed job. Better option?
-      stringParam('repo_owner', repo.owner, 'Do NOT modify')
-      stringParam('repo_name', repo.name, 'Do NOT modify')
+      stringParam('param_repo_owner', repo.owner, 'Do NOT modify')
+      stringParam('param_repo_name', repo.name, 'Do NOT modify')
+      credentialsParam('param_repo_credential_id') {
+        description('Do NOT modify')
+        defaultValue(repo.credentialId)
+      }
     }
     // TODO: Switch to multiscm with replay_ci as extra repo
     scm {
