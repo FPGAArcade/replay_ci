@@ -111,7 +111,7 @@ def createJob(repo, core_name, core_path, core_target) {
       git {
         remote {
           url(repo.url)
-          credentials(repo.credential_id)
+          credentials(repo.credentialId)
         }
         extensions {
           relativeTargetDirectory(repo.name)
