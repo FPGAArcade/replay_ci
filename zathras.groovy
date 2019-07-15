@@ -52,11 +52,12 @@ repos.each { repo ->
       gitHubPushTrigger()
     }
     steps {
-      dsl {
-        text(seed_script)
-        removeAction('DELETE')
-        removeViewAction('DELETE')
-        // TODO: No removeConfigAction?
+      jobDsl {
+        scriptText(seed_script)
+        removedJobAction('DELETE')
+        removedViewAction('DELETE')
+        removedConfigFilesAction('DELETE')
+        failOnSeedCollision(true)
       }
     }
     logRotator {
