@@ -15,6 +15,13 @@
 // Classes
 // -----------------------------------------------------------------------------
 
+class Repo {
+  String owner
+  String name
+  String credentialId
+  String url
+}
+
 class Core {
   String name
   String path
@@ -26,21 +33,21 @@ class Core {
 // -----------------------------------------------------------------------------
 
 // TODO: Refactor job params into repo, core and queue
-def createJob(repo_owner, repo_name, repo_credential_id, repo_url, core_name, core_path, core_target) {
-  folder("${repo_owner}-${repo_name}/${core_name}")
+def createJob(repo, core_name, core_path, core_target) {
+  folder("${repo.owner}-${repo.name}/${core_name}")
 
-  String jobName = "${repo_owner}-${repo_name}/${core_name}/${core_target}"
+  String jobName = "${repo.owner}-${repo.name}/${core_name}/${core_target}"
 
   job(jobName) {
     description("Autocreated build job for ${jobName}")
     properties {
-      githubProjectUrl("https://github.com/${repo_owner}/${repo_name}")
+      githubProjectUrl("https://github.com/${repo.owner}/${repo.name}")
     }
     multiscm {
       // Jenkins is not able to determine other repo build deps currently.
       // We assume only replay_common exists as a dep and that every job
       // except for replay_common itself, depends on it.
-      if (repo_name != "replay_common") {
+      if (repo.name != "replay_common") {
         git {
           remote {
             url("git@github.com:Takasa/replay_common.git")
@@ -55,11 +62,11 @@ def createJob(repo_owner, repo_name, repo_credential_id, repo_url, core_name, co
       }
       git {
         remote {
-          url(repo_url)
-          credentials(repo_credential_id)
+          url(repo.url)
+          credentials(repo.credential_id)
         }
         extensions {
-          relativeTargetDirectory(repo_name)
+          relativeTargetDirectory(repo.name)
           pathRestriction {
             includedRegions("${core_path}/.*")
             excludedRegions('')
@@ -89,14 +96,14 @@ def createJob(repo_owner, repo_name, repo_credential_id, repo_url, core_name, co
 
             EOF
 
-            cd ${repo_name}/${core_path}
+            cd ${repo.name}/${core_path}
             python rmake.py infer --target ${core_target}
             exit \$?
             """.stripIndent())
     }
     publishers {
       archiveArtifacts {
-        pattern("${repo_name}/${core_path}/sdcard/**")
+        pattern("${repo.name}/${core_path}/sdcard/**")
         onlyIfSuccessful()
       }
       // slackNotifier {
@@ -135,6 +142,11 @@ def createJob(repo_owner, repo_name, repo_credential_id, repo_url, core_name, co
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
+
+Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
+                          credentialId: param_repo_credential_id, url: param_repo_url)
+
+
 def cores = []
 
 def coresFile = readFileFromWorkspace('_cores.txt')
@@ -159,13 +171,11 @@ coresFile.eachLine {
 }
 
 // Base folder should always exist
-folder("${param_repo_owner}-${param_repo_name}")
+folder("${repo.owner}-${repo.name}")
 
 cores.each { core ->
   core.targets.each { target ->
-    String jobName = createJob(param_repo_owner, param_repo_name,
-                               param_repo_credential_id, param_repo_url,
-                               core.name, core.path, target)
+    String jobName = createJob(repo_info, core.name, core.path, target)
 
     // If new job created rather than updated/removed, trigger build
     if (!jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {

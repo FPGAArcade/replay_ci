@@ -20,11 +20,11 @@ def repos = [
     credentialId: 'Sector14_replay_common'
   ],
 
-  // [
-  //   owner: 'Sector14',
-  //   name: 'acorn_electron',
-  //   url: 'https://github.com/Sector14/acorn-electron-core.git'
-  // ],
+  [
+    owner: 'Sector14',
+    name: 'acorn_electron',
+    url: 'https://github.com/Sector14/acorn-electron-core.git'
+  ],
 ]
 
 folder('seed_jobs')
@@ -51,8 +51,8 @@ repos.each { repo ->
     scm {
       git {
         remote {
-          url("git@github.com:${repo.owner}/${repo.name}.git")
-          credentials("${repo.owner}_${repo.name}")
+          url(repo.url)
+          credentials(repo.credentialId)
         }
         branch('master')
         extensions {
