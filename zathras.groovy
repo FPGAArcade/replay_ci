@@ -80,8 +80,5 @@ repos.each { repo ->
     }
   }
 
-  // If new job created rather than updated/removed, trigger build
-  if (!jenkins.model.Jenkins.instance.getItemByFullName(job_name)) {
-    queue(job_name)
-  }
+  queue(job_name)
 }
