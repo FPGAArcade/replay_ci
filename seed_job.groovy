@@ -125,6 +125,8 @@ def createJob(repo_owner, repo_name, name, path, target) {
       }
     }
   }
+
+  return jobName
 }
 
 // -----------------------------------------------------------------------------
@@ -156,7 +158,12 @@ folder("${repo_owner}-${repo_name}")
 
 cores.each { core ->
   core.targets.each { target ->
-    createJob(repo_owner, repo_name, core.name, core.path, target)
+    String jobName = createJob(repo_owner, repo_name, core.name, core.path, target)
+
+    // If new job created rather than updated/removed, trigger build
+    if (!jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {
+      queue(jobName)
+    }
   }
 }
 

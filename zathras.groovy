@@ -13,7 +13,7 @@ def repos = [
   [owner: 'takasa', name: 'replay_common', url: 'git@github.com:Takasa/replay_common.git'],
   [owner: 'takasa', name: 'replay_console', url: 'git@github.com:Takasa/replay_console.git'],
 
-  [owner: 'sector14', name: 'replay_common', url: 'git@github.com:Sector14/replay_common.git'],
+  [owner: 'Sector14', name: 'replay_common', url: 'git@github.com:Sector14/replay_common.git'],
 ]
 
 folder('seed_jobs')
@@ -57,7 +57,7 @@ repos.each { repo ->
       }
     }
     logRotator {
-      numToKeep(1)
+      numToKeep(20)
     }
   }
 
