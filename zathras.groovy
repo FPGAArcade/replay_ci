@@ -72,7 +72,6 @@ repos.each { repo ->
         removedJobAction('DELETE')
         removedViewAction('DELETE')
         removedConfigFilesAction('DELETE')
-        failOnSeedCollision(true)
         sandbox(true)
       }
     }
