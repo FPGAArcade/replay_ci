@@ -24,10 +24,10 @@ class Core {
 // Methods
 // -----------------------------------------------------------------------------
 
-def createJob(repo_owner, repo_name, repo_credential_id, name, path, target) {
-  folder("${repo_owner}-${repo_name}/${name}")
+def createJob(repo_owner, repo_name, repo_credential_id, core_name, core_path, core_target) {
+  folder("${repo_owner}-${repo_name}/${core_name}")
 
-  String jobName = "${repo_owner}-${repo_name}/${name}/${target}"
+  String jobName = "${repo_owner}-${repo_name}/${core_name}/${core_target}"
 
   job(jobName) {
     description("Autocreated build job for ${jobName}")
@@ -59,7 +59,7 @@ def createJob(repo_owner, repo_name, repo_credential_id, name, path, target) {
         extensions {
           relativeTargetDirectory(repo_name)
           pathRestriction {
-            includedRegions("${path}/.*")
+            includedRegions("${core_path}/.*")
             excludedRegions('')
           }
         }
@@ -87,14 +87,14 @@ def createJob(repo_owner, repo_name, repo_credential_id, name, path, target) {
 
             EOF
 
-            cd ${repo_name}/${path}
-            python rmake.py infer --target ${target}
+            cd ${repo_name}/${core_path}
+            python rmake.py infer --target ${core_target}
             exit \$?
             """.stripIndent())
     }
     publishers {
       archiveArtifacts {
-        pattern("${repo_name}/${path}/sdcard/**")
+        pattern("${repo_name}/${core_path}/sdcard/**")
         onlyIfSuccessful()
       }
       // slackNotifier {
