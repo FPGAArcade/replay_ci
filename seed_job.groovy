@@ -29,6 +29,54 @@ class Core {
 }
 
 // -----------------------------------------------------------------------------
+// Globals
+// -----------------------------------------------------------------------------
+
+Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
+                          credentialId: param_repo_credential_id, url: param_repo_url)
+
+// -----------------------------------------------------------------------------
+// Main
+// -----------------------------------------------------------------------------
+
+def cores = []
+
+def coresFile = readFileFromWorkspace('_cores.txt')
+
+// Extract core and supported targets
+coresFile.eachLine {
+  def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
+
+  if (matcher.matches()) {
+    def path = matcher.group('path')
+    // TODO: Base name on the last part of any path and fail job creation
+    //       if any duplicates detected
+    def name = path.replaceAll('/','_')
+    def targets = []
+    matcher.group('targets').findAll(/\[(\w+?)\]/) {
+      target -> targets << target[1]
+    }
+    cores << new Core(name: name, path: path, targets: targets)
+  }
+  else
+    out.println("Match failure for _core.txt line: ${it}")
+}
+
+// Base folder should always exist
+folder("${repo.owner}-${repo.name}")
+
+cores.each { core ->
+  core.targets.each { target ->
+    String jobName = createJob(repo_info, core.name, core.path, target)
+
+    // If new job created rather than updated/removed, trigger build
+    if (!jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {
+      queue(jobName)
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Methods
 // -----------------------------------------------------------------------------
 
@@ -138,49 +186,3 @@ def createJob(repo, core_name, core_path, core_target) {
 
   return jobName
 }
-
-// -----------------------------------------------------------------------------
-// Main
-// -----------------------------------------------------------------------------
-
-Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
-                          credentialId: param_repo_credential_id, url: param_repo_url)
-
-
-def cores = []
-
-def coresFile = readFileFromWorkspace('_cores.txt')
-
-// Extract core and supported targets
-coresFile.eachLine {
-  def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
-
-  if (matcher.matches()) {
-    def path = matcher.group('path')
-    // TODO: Base name on the last part of any path and fail job creation
-    //       if any duplicates detected
-    def name = path.replaceAll('/','_')
-    def targets = []
-    matcher.group('targets').findAll(/\[(\w+?)\]/) {
-      target -> targets << target[1]
-    }
-    cores << new Core(name: name, path: path, targets: targets)
-  }
-  else
-    out.println("Match failure for _core.txt line: ${it}")
-}
-
-// Base folder should always exist
-folder("${repo.owner}-${repo.name}")
-
-cores.each { core ->
-  core.targets.each { target ->
-    String jobName = createJob(repo_info, core.name, core.path, target)
-
-    // If new job created rather than updated/removed, trigger build
-    if (!jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {
-      queue(jobName)
-    }
-  }
-}
-
