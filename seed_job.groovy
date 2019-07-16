@@ -73,7 +73,6 @@ cores.each { core ->
 // Methods
 // -----------------------------------------------------------------------------
 
-// TODO: Refactor job params into repo, core and queue
 def createCoreJobs(repo, core, queueNewJobs) {
   core.targets.each { core_target ->
 
@@ -149,18 +148,18 @@ def createCoreJobs(repo, core, queueNewJobs) {
           pattern("${repo.name}/${core.path}/sdcard/**")
           onlyIfSuccessful()
         }
-        // slackNotifier {
-        //   startNotification(true)
-        //   notifyAborted(true)
-        //   notifyBackToNormal(true)
-        //   notifyEveryFailure(true)
-        //   notifyFailure(true)
-        //   notifyNotBuilt(true)
-        //   notifyRegression(true)
-        //   notifyRepeatedFailure(true)
-        //   notifySuccess(true)
-        //   notifyUnstable(true)
-        // }
+        slackNotifier {
+          startNotification(true)
+          notifyAborted(true)
+          notifyBackToNormal(true)
+          notifyEveryFailure(true)
+          notifyFailure(true)
+          notifyNotBuilt(true)
+          notifyRegression(true)
+          notifyRepeatedFailure(true)
+          notifySuccess(true)
+          notifyUnstable(true)
+        }
       }
       wrappers {
         configure { node ->
