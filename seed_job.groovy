@@ -66,14 +66,7 @@ coresFile.eachLine {
 folder("${repo_info.owner}-${repo_info.name}")
 
 cores.each { core ->
-  core.targets.each { target ->
-    String jobName = createJob(repo_info, core.name, core.path, target)
-
-    // If new job created rather than updated/removed, trigger build
-    if (!jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {
-      queue(jobName)
-    }
-  }
+  createCoreJobs(repo_info, core, true)
 }
 
 // -----------------------------------------------------------------------------
@@ -81,108 +74,114 @@ cores.each { core ->
 // -----------------------------------------------------------------------------
 
 // TODO: Refactor job params into repo, core and queue
-def createJob(repo, core_name, core_path, core_target) {
-  folder("${repo.owner}-${repo.name}/${core_name}")
+def createCoreJobs(repo, core, queueNewJobs) {
+  core.targets.each { core_target ->
 
-  String jobName = "${repo.owner}-${repo.name}/${core_name}/${core_target}"
+    folder("${repo.owner}-${repo.name}/${core.name}")
 
-  job(jobName) {
-    description("Autocreated build job for ${jobName}")
-    properties {
-      githubProjectUrl("https://github.com/${repo.owner}/${repo.name}")
-    }
-    multiscm {
-      // Jenkins is not able to determine other repo build deps currently.
-      // We assume only replay_common exists as a dep and that every job
-      // except for replay_common itself, depends on it.
-      if (repo.name != "replay_common") {
+    String jobName = "${repo.owner}-${repo.name}/${core.name}/${core_target}"
+
+    job(jobName) {
+      description("Autocreated build job for ${jobName}")
+      properties {
+        githubProjectUrl("https://github.com/${repo.owner}/${repo.name}")
+      }
+      multiscm {
+        // Jenkins is not able to determine other repo build deps currently.
+        // We assume only replay_common exists as a dep and that every job
+        // except for replay_common itself, depends on it.
+        if (repo.name != "replay_common") {
+          git {
+            remote {
+              url("git@github.com:Takasa/replay_common.git")
+              credentials("takasa_replay_common")
+            }
+            extensions {
+              relativeTargetDirectory('replay_common')
+              // TODO: Trigger build only if framework/lib changes?
+            }
+            branch('master')
+          }
+        }
         git {
           remote {
-            url("git@github.com:Takasa/replay_common.git")
-            credentials("takasa_replay_common")
+            url(repo.url)
+            credentials(repo.credentialId)
           }
           extensions {
-            relativeTargetDirectory('replay_common')
-            // TODO: Trigger build only if framework/lib changes?
+            relativeTargetDirectory(repo.name)
+            pathRestriction {
+              includedRegions("${core.path}/.*")
+              excludedRegions('')
+            }
           }
           branch('master')
         }
       }
-      git {
-        remote {
-          url(repo.url)
-          credentials(repo.credentialId)
+      triggers {
+        gitHubPushTrigger()
+      }
+      steps {
+        shell("""\
+              python --version
+
+              # Create local settings if this is a replay_common repo
+              [ -d "replay_common/scripts/" ] && cat << EOF > replay_common/scripts/local_settings.py
+              # Local paths auto generated via jenkins project build script
+              ISE_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/'
+              ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
+
+              MODELSIM_PATH = ''
+              QUARTUS_PATH = '/opt/intelFPGA_lite/18.1/quartus/bin/'
+
+              # if UNISIM_PATH is empty, a local (tb/sim) library will be created
+              UNISIM_PATH = None
+
+              EOF
+
+              cd ${repo.name}/${core.path}
+              python rmake.py infer --target ${core_target}
+              exit \$?
+              """.stripIndent())
+      }
+      publishers {
+        archiveArtifacts {
+          pattern("${repo.name}/${core.path}/sdcard/**")
+          onlyIfSuccessful()
         }
-        extensions {
-          relativeTargetDirectory(repo.name)
-          pathRestriction {
-            includedRegions("${core_path}/.*")
-            excludedRegions('')
+        // slackNotifier {
+        //   startNotification(true)
+        //   notifyAborted(true)
+        //   notifyBackToNormal(true)
+        //   notifyEveryFailure(true)
+        //   notifyFailure(true)
+        //   notifyNotBuilt(true)
+        //   notifyRegression(true)
+        //   notifyRepeatedFailure(true)
+        //   notifySuccess(true)
+        //   notifyUnstable(true)
+        // }
+      }
+      wrappers {
+        configure { node ->
+          node / 'buildWrappers' / 'ruby-proxy-object' / 'ruby-object'(['ruby-class': 'Jenkins::Tasks::BuildWrapperProxy', 'pluginid': 'pyenv']) {
+            'object'(['ruby-class': 'PyenvWrapper', 'pluginid': 'pyenv']) {
+              'pyenv_repository'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'https://github.com/yyuu/pyenv.git')
+              'version'(['ruby-class': 'String', 'pluginid': 'pyenv'], '3.6.5')
+              'pyenv__revision'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'master')
+              'pyenv__root'(['ruby-class': 'String', 'pluginid': 'pyenv'], '$HOME/.pyenv')
+              'ignore__local__version'(['ruby-class': 'FalseClass', 'pluginid': 'pyenv'])
+              'pip__list'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'tox')
+            }
+            'pluginid'([pluginid: 'pyenv', 'ruby-class': 'String'], 'pyenv')
           }
         }
-        branch('master')
       }
     }
-    triggers {
-      gitHubPushTrigger()
-    }
-    steps {
-      shell("""\
-            python --version
 
-            # Create local settings if this is a replay_common repo
-            [ -d "replay_common/scripts/" ] && cat << EOF > replay_common/scripts/local_settings.py
-            # Local paths auto generated via jenkins project build script
-            ISE_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/'
-            ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
-
-            MODELSIM_PATH = ''
-            QUARTUS_PATH = '/opt/intelFPGA_lite/18.1/quartus/bin/'
-
-            # if UNISIM_PATH is empty, a local (tb/sim) library will be created
-            UNISIM_PATH = None
-
-            EOF
-
-            cd ${repo.name}/${core_path}
-            python rmake.py infer --target ${core_target}
-            exit \$?
-            """.stripIndent())
-    }
-    publishers {
-      archiveArtifacts {
-        pattern("${repo.name}/${core_path}/sdcard/**")
-        onlyIfSuccessful()
-      }
-      // slackNotifier {
-      //   startNotification(true)
-      //   notifyAborted(true)
-      //   notifyBackToNormal(true)
-      //   notifyEveryFailure(true)
-      //   notifyFailure(true)
-      //   notifyNotBuilt(true)
-      //   notifyRegression(true)
-      //   notifyRepeatedFailure(true)
-      //   notifySuccess(true)
-      //   notifyUnstable(true)
-      // }
-    }
-    wrappers {
-      configure { node ->
-        node / 'buildWrappers' / 'ruby-proxy-object' / 'ruby-object'(['ruby-class': 'Jenkins::Tasks::BuildWrapperProxy', 'pluginid': 'pyenv']) {
-          'object'(['ruby-class': 'PyenvWrapper', 'pluginid': 'pyenv']) {
-            'pyenv_repository'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'https://github.com/yyuu/pyenv.git')
-            'version'(['ruby-class': 'String', 'pluginid': 'pyenv'], '3.6.5')
-            'pyenv__revision'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'master')
-            'pyenv__root'(['ruby-class': 'String', 'pluginid': 'pyenv'], '$HOME/.pyenv')
-            'ignore__local__version'(['ruby-class': 'FalseClass', 'pluginid': 'pyenv'])
-            'pip__list'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'tox')
-          }
-          'pluginid'([pluginid: 'pyenv', 'ruby-class': 'String'], 'pyenv')
-        }
-      }
+    // If new job created rather than updated/removed, trigger build
+    if (queueNewJobs && !jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {
+      queue(jobName)
     }
   }
-
-  return jobName
 }
