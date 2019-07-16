@@ -9,10 +9,37 @@
 
 // TODO: read from a workspace repos.json to avoid script reauth on changes.
 //       Include credentials ID here when required
+// TODO: Remove owner/name and add projectUrl and base folder name?
+//       Once loading from json, sanity check that no repos use same base name.
 def repos = [
-  // [owner: 'takasa', name: 'replay_common', url: 'git@github.com:Takasa/replay_common.git'],
-  // [owner: 'takasa', name: 'replay_console', url: 'git@github.com:Takasa/replay_console.git'],
 
+  // Takasa
+  [
+    owner: 'Takasa',
+    name: 'replay_common',
+    url: 'git@github.com:Takasa/replay_common.git',
+    credentialId: 'takasa_replay_common'
+  ],
+  [
+    owner: 'Takasa',
+    name: 'replay_console',
+    url: 'git@github.com:Takasa/replay_console.git',
+    credentialId: 'takasa_replay_console'
+  ],
+  [
+    owner: 'Takasa',
+    name: 'replay_arcade',
+    url: 'git@github.com:Takasa/replay_arcade.git',
+    credentialId: 'takasa_replay_arcade'
+  ],
+  [
+    owner: 'Takasa',
+    name: 'replay_computer',
+    url: 'git@github.com:Takasa/replay_computer.git',
+    credentialId: 'takasa_replay_computer'
+  ],
+
+  // Sector14
   [
     owner: 'Sector14',
     name: 'replay_common',
@@ -20,11 +47,12 @@ def repos = [
     credentialId: 'Sector14_replay_common'
   ],
 
-  [
-    owner: 'Sector14',
-    name: 'acorn_electron',
-    url: 'https://github.com/Sector14/acorn-electron-core.git'
-  ],
+  // TODO: Add support for single core repo or rearrange repo to support sub dir
+  // [
+  //   owner: 'Sector14',
+  //   name: 'acorn_electron',
+  //   url: 'https://github.com/Sector14/acorn-electron-core.git'
+  // ],
 ]
 
 folder('seed_jobs')
