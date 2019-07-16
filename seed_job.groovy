@@ -78,43 +78,58 @@ def createCoreJobs(repo, core, queueNewJobs) {
 
     folder("${repo.owner}-${repo.name}/${core.name}")
 
-    String jobName = "${repo.owner}-${repo.name}/${core.name}/${core_target}"
+    String job_name = "${repo.owner}-${repo.name}/${core.name}/${core_target}"
 
-    job(jobName) {
-      description("Autocreated build job for ${jobName}")
+    // Other repos need to rebuild only when replay_common framework changes
+    // However, replay_common itself also needs to rebuild if loader core changes.
+    String replay_common_includes = """\
+                                       lib/.*
+                                       replay_lib/.*
+                                       replay_targets/.*
+                                    """.stripIndent()
+    if (repo.name == "replay_common") {
+      replay_common_includes = replay_common_includes.concat("${core.path}/.*")
+    }  
+
+    job(job_name) {
+      description("Autocreated build job for ${job_name}")
       properties {
         githubProjectUrl("https://github.com/${repo.owner}/${repo.name}")
       }
       multiscm {
-        // Jenkins is not able to determine other repo build deps currently.
-        // We assume only replay_common exists as a dep and that every job
-        // except for replay_common itself, depends on it.
-        if (repo.name != "replay_common") {
-          git {
-            remote {
-              url("git@github.com:Takasa/replay_common.git")
-              credentials("takasa_replay_common")
-            }
-            extensions {
-              relativeTargetDirectory('replay_common')
-              // TODO: Trigger build only if framework/lib changes?
-            }
-            branch('master')
-          }
-        }
+        // Jenkins is not able to determine other core build deps currently
+        // We assume only replay_common exists as a dep and that every core
+        // depends on it.
         git {
           remote {
-            url(repo.url)
-            credentials(repo.credentialId)
+            url("git@github.com:Takasa/replay_common.git")
+            credentials("takasa_replay_common")
           }
           extensions {
-            relativeTargetDirectory(repo.name)
+            relativeTargetDirectory('replay_common')
             pathRestriction {
-              includedRegions("${core.path}/.*")
+              includedRegions(replay_common_includes)
               excludedRegions('')
             }
           }
           branch('master')
+        }
+
+        if (repo.name != "replay_common") {
+          git {
+            remote {
+              url(repo.url)
+              credentials(repo.credentialId)
+            }
+            extensions {
+              relativeTargetDirectory(repo.name)
+              pathRestriction {
+                includedRegions("${core.path}/.*")
+                excludedRegions('')
+              }
+            }
+            branch('master')
+          }
         }
       }
       triggers {
@@ -179,8 +194,8 @@ def createCoreJobs(repo, core, queueNewJobs) {
     }
 
     // If new job created rather than updated/removed, trigger build
-    if (queueNewJobs && !jenkins.model.Jenkins.instance.getItemByFullName(jobName)) {
-      queue(jobName)
+    if (queueNewJobs && !jenkins.model.Jenkins.instance.getItemByFullName(job_name)) {
+      queue(job_name)
     }
   }
 }
