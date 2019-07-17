@@ -35,9 +35,14 @@ class Core {
 Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
                           credentialId: param_repo_credential_id, url: param_repo_url)
 
+def configuration = new HashMap()
+
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
+
+def binding = getBinding()
+configuration.putAll(binding.getVariables())
 
 def cores = []
 
@@ -71,15 +76,17 @@ cores_file.eachLine {
     out.println("Match failure for _core.txt line: ${it}")
 }
 
+Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
+out.println("Production server: ${isProduction}")
 cores.each { core ->
-  createCoreJobs(repo_info, core, true)
+  createCoreJobs(repo_info, core, true, isProduction)
 }
 
 // -----------------------------------------------------------------------------
 // Methods
 // -----------------------------------------------------------------------------
 
-def createCoreJobs(repo, core, queueNewJobs) {
+def createCoreJobs(repo, core, queueNewJobs, isProduction) {
 
   String job_folder = "${repo.owner}-${repo.name}"
   folder(job_folder)
@@ -99,7 +106,7 @@ def createCoreJobs(repo, core, queueNewJobs) {
                                     """.stripIndent()
     if (repo.name == "replay_common") {
       replay_common_includes = replay_common_includes.concat("${core.path}/.*")
-    }  
+    }
 
     job(job_name) {
       description("Autocreated build job for ${job_name}")
@@ -112,8 +119,13 @@ def createCoreJobs(repo, core, queueNewJobs) {
         // depends on it.
         git {
           remote {
-            url("git@github.com:Takasa/replay_common.git")
-            credentials("takasa_replay_common")
+            if (isProduction) {
+              url("git@github.com:Takasa/replay_common.git")
+              credentials("takasa_replay_common")
+            } else {
+              url("git@github.com:Sector14/replay_common.git")
+              credentials("sector14_replay_common")
+            }
           }
           extensions {
             relativeTargetDirectory('replay_common')
