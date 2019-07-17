@@ -47,7 +47,7 @@ configuration.putAll(binding.getVariables())
 
 Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
 
-out.println("Running on " + isProduction ? "PRODUCTION" : "TEST" + " server.")
+out.println("Running on " + (isProduction ? "PRODUCTION" : "TEST") + " server.")
 
 def cores = []
 
