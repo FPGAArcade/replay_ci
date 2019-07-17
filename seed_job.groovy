@@ -41,8 +41,13 @@ def configuration = new HashMap()
 // Main
 // -----------------------------------------------------------------------------
 
+// Env variables
 def binding = getBinding()
 configuration.putAll(binding.getVariables())
+
+Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
+
+out.println("Running on " + isProduction ? "PRODUCTION" : "TEST" + " server.")
 
 def cores = []
 
@@ -53,31 +58,32 @@ def unique_names = []
 cores_file.eachLine {
   def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
 
-  if (matcher.matches()) {
-    def path = matcher.group('path')
-    // TODO: Test what happens if a core name ends in a slash!
-    // TODO: Base name on the last part of any path and fail job creation
-    //       if any duplicates detected
-    def name = path.replaceAll('/','_')
-    def targets = []
-    matcher.group('targets').findAll(/\[(\w+?)\]/) {
-      target -> targets << target[1]
-    }
-
-    // Fail job if duplicate core names detected
-    if (unique_names.contains(name)) {
-      error "Duplicate core name '${name}' in repo ${repo_info.url}. Aborting."
-    }
-    unique_names.add(name)
-
-    cores << new Core(name: name, path: path, targets: targets)
-  }
-  else
+  if (! matcher.matches()) {
     out.println("Match failure for _core.txt line: ${it}")
+    return
+  }
+
+  def path = matcher.group('path')
+  def name = coreNameFromPath(path)
+  if (! name) {
+    error "Unable to determine core name for path: ${path}"
+    return
+  }
+
+  def targets = []
+  matcher.group('targets').findAll(/\[(\w+?)\]/) {
+    target -> targets << target[1]
+  }
+
+  // Fail job if duplicate core names detected
+  if (unique_names.contains(name)) {
+    error "Duplicate core name '${name}' in repo ${repo_info.url}. Aborting."
+  }
+  unique_names.add(name)
+
+  cores << new Core(name: name, path: path, targets: targets)
 }
 
-Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
-out.println("Production server: ${isProduction}")
 cores.each { core ->
   createCoreJobs(repo_info, core, true, isProduction)
 }
@@ -85,6 +91,13 @@ cores.each { core ->
 // -----------------------------------------------------------------------------
 // Methods
 // -----------------------------------------------------------------------------
+
+// Use last directory of given path as core name
+def coreNameFromPath(path) {
+  def matcher = path =~ /.*?\/*(\w+)\s*$/
+
+  return matcher.matches() ? matcher.group(1) : null
+}
 
 def createCoreJobs(repo, core, queueNewJobs, isProduction) {
 
