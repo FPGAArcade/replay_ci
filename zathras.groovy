@@ -3,7 +3,6 @@
 //
 // Setup as a free style job with webhook trigger on replay_ci
 // Note: CI only supports repos on github currently.
-//       Assumptions are made that credentials exist with ${owner}_${repo} format
 // Note2: Credentials and git url case must match the github case as the webhook
 //        is case sensitive.
 
@@ -15,8 +14,9 @@
 //       replay_ repos but will want to be configurable to account for other
 //       repos using develop
 def repos = [
-
-  // Takasa
+  //
+  // Production Server
+  //
   [
     owner: 'Takasa',
     name: 'replay_common',
@@ -42,19 +42,23 @@ def repos = [
     credentialId: 'takasa_replay_computer'
   ],
 
-  // Sector14
+  //
+  // Test Server
+  //
   [
     owner: 'Sector14',
     name: 'replay_common',
     url: 'git@github.com:Sector14/replay_common.git',
-    credentialId: 'sector14_replay_common'
+    credentialId: 'sector14_replay_common',
+    testingOnly: true
   ],
 
   [
     owner: 'Sector14',
     name: 'replay_arcade',
     url: 'git@github.com:Sector14/replay_arcade.git',
-    credentialId: 'sector14_replay_arcade'
+    credentialId: 'sector14_replay_arcade',
+    testingOnly: true
   ],
 
   // TODO: Add support for single core repo or rearrange repo to support sub dir
@@ -65,11 +69,31 @@ def repos = [
   // ],
 ]
 
+
+// -----------------------------------------------------------------------------
+// Globals
+// -----------------------------------------------------------------------------
+
+// Wrap environment vars
+def configuration = new HashMap()
+def binding = getBinding()
+configuration.putAll(binding.getVariables())
+
+Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
+
+// -----------------------------------------------------------------------------
+// Main
+// -----------------------------------------------------------------------------
+out.println("Running on " + (isProduction ? "PRODUCTION" : "TEST") + " server.")
+
 folder('seed_jobs')
 
 String seed_script = readFileFromWorkspace('seed_job.groovy')
 
 repos.each { repo ->
+  if (repo.testingOnly && isProduction)
+    return
+
   String job_name = "seed_jobs/${repo.owner}-${repo.name}-seeder"
 
   job(job_name) {
