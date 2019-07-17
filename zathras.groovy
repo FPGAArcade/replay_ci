@@ -50,6 +50,13 @@ def repos = [
     credentialId: 'Sector14_replay_common'
   ],
 
+  [
+    owner: 'Sector14',
+    name: 'replay_arcade',
+    url: 'git@github.com:Sector14/replay_arcade.git',
+    credentialId: 'Sector14_replay_arcade'
+  ],
+
   // TODO: Add support for single core repo or rearrange repo to support sub dir
   // [
   //   owner: 'Sector14',
@@ -63,11 +70,10 @@ folder('seed_jobs')
 String seed_script = readFileFromWorkspace('seed_job.groovy')
 
 repos.each { repo ->
-
   String job_name = "seed_jobs/${repo.owner}-${repo.name}-seeder"
 
   job(job_name) {
-    description("Seed job for ${repo.owner}/${repo.name}.")
+    description("Seed job for ${repo.url}.")
     parameters {
       // REVIEW: Don't really want these as ui editable params, better option?
       stringParam('param_repo_owner', repo.owner, 'Do NOT modify')
