@@ -11,8 +11,8 @@
 //       Include credentials ID here when required
 // TODO: Remove owner/name and add projectUrl and base folder name?
 //       Once loading from json, sanity check that no repos use same base name.
-// TODO: seed jobs assume "master" branch is used for development which is true of 
-//       replay_ repos but will want to be configurable to account for other 
+// TODO: seed jobs assume "master" branch is used for development which is true of
+//       replay_ repos but will want to be configurable to account for other
 //       repos using develop
 def repos = [
 
@@ -47,7 +47,14 @@ def repos = [
     owner: 'Sector14',
     name: 'replay_common',
     url: 'git@github.com:Sector14/replay_common.git',
-    credentialId: 'Sector14_replay_common'
+    credentialId: 'sector14_replay_common'
+  ],
+
+  [
+    owner: 'Sector14',
+    name: 'replay_arcade',
+    url: 'git@github.com:Sector14/replay_arcade.git',
+    credentialId: 'sector14_replay_arcade'
   ],
 
   // TODO: Add support for single core repo or rearrange repo to support sub dir
@@ -63,11 +70,10 @@ folder('seed_jobs')
 String seed_script = readFileFromWorkspace('seed_job.groovy')
 
 repos.each { repo ->
-
   String job_name = "seed_jobs/${repo.owner}-${repo.name}-seeder"
 
   job(job_name) {
-    description("Seed job for ${repo.owner}/${repo.name}.")
+    description("Seed job for ${repo.url}.")
     parameters {
       // REVIEW: Don't really want these as ui editable params, better option?
       stringParam('param_repo_owner', repo.owner, 'Do NOT modify')

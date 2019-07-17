@@ -35,50 +35,80 @@ class Core {
 Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
                           credentialId: param_repo_credential_id, url: param_repo_url)
 
+def configuration = new HashMap()
+
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
 
+// Env variables
+def binding = getBinding()
+configuration.putAll(binding.getVariables())
+
+Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
+
+out.println("Running on " + isProduction ? "PRODUCTION" : "TEST" + " server.")
+
 def cores = []
 
-def coresFile = readFileFromWorkspace('_cores.txt')
+def cores_file = readFileFromWorkspace('_cores.txt')
+def unique_names = []
 
 // Extract core and supported targets
-coresFile.eachLine {
+cores_file.eachLine {
   def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
 
-  if (matcher.matches()) {
-    def path = matcher.group('path')
-    // TODO: Base name on the last part of any path and fail job creation
-    //       if any duplicates detected
-    def name = path.replaceAll('/','_')
-    def targets = []
-    matcher.group('targets').findAll(/\[(\w+?)\]/) {
-      target -> targets << target[1]
-    }
-    cores << new Core(name: name, path: path, targets: targets)
-  }
-  else
+  if (! matcher.matches()) {
     out.println("Match failure for _core.txt line: ${it}")
+    return
+  }
+
+  def path = matcher.group('path')
+  def name = coreNameFromPath(path)
+  if (! name) {
+    error "Unable to determine core name for path: ${path}"
+    return
+  }
+
+  def targets = []
+  matcher.group('targets').findAll(/\[(\w+?)\]/) {
+    target -> targets << target[1]
+  }
+
+  // Fail job if duplicate core names detected
+  if (unique_names.contains(name)) {
+    error "Duplicate core name '${name}' in repo ${repo_info.url}. Aborting."
+  }
+  unique_names.add(name)
+
+  cores << new Core(name: name, path: path, targets: targets)
 }
 
-// Base folder should always exist
-folder("${repo_info.owner}-${repo_info.name}")
-
 cores.each { core ->
-  createCoreJobs(repo_info, core, true)
+  createCoreJobs(repo_info, core, true, isProduction)
 }
 
 // -----------------------------------------------------------------------------
 // Methods
 // -----------------------------------------------------------------------------
 
-def createCoreJobs(repo, core, queueNewJobs) {
+// Use last directory of given path as core name
+def coreNameFromPath(path) {
+  def matcher = path =~ /.*?\/*(\w+)\s*$/
+
+  return matcher.matches() ? matcher.group(1) : null
+}
+
+def createCoreJobs(repo, core, queueNewJobs, isProduction) {
+
+  String job_folder = "${repo.owner}-${repo.name}"
+  folder(job_folder)
+
   core.targets.each { core_target ->
 
-    folder("${repo.owner}-${repo.name}/${core.name}")
+    folder("${job_folder}/${core.name}")
 
-    String job_name = "${repo.owner}-${repo.name}/${core.name}/${core_target}"
+    String job_name = "${job_folder}/${core.name}/${core_target}"
 
     // Other repos need to rebuild only when replay_common framework changes
     // However, replay_common itself also needs to rebuild if loader core changes.
@@ -89,7 +119,7 @@ def createCoreJobs(repo, core, queueNewJobs) {
                                     """.stripIndent()
     if (repo.name == "replay_common") {
       replay_common_includes = replay_common_includes.concat("${core.path}/.*")
-    }  
+    }
 
     job(job_name) {
       description("Autocreated build job for ${job_name}")
@@ -102,8 +132,13 @@ def createCoreJobs(repo, core, queueNewJobs) {
         // depends on it.
         git {
           remote {
-            url("git@github.com:Takasa/replay_common.git")
-            credentials("takasa_replay_common")
+            if (isProduction) {
+              url("git@github.com:Takasa/replay_common.git")
+              credentials("takasa_replay_common")
+            } else {
+              url("git@github.com:Sector14/replay_common.git")
+              credentials("sector14_replay_common")
+            }
           }
           extensions {
             relativeTargetDirectory('replay_common')
