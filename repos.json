@@ -1,0 +1,47 @@
+[
+  {
+    "owner": "Takasa",
+    "name": "replay_common",
+    "url": "git@github.com:Takasa/replay_common.git",
+    "credentialId": "takasa_replay_common"
+  },
+  {
+    "owner": "Takasa",
+    "name": "replay_console",
+    "url": "git@github.com:Takasa/replay_console.git",
+    "credentialId": "takasa_replay_console"
+  },
+  {
+    "owner": "Takasa",
+    "name": "replay_arcade",
+    "url": "git@github.com:Takasa/replay_arcade.git",
+    "credentialId": "takasa_replay_arcade"
+  },
+  {
+    "owner": "Takasa",
+    "name": "replay_computer",
+    "url": "git@github.com:Takasa/replay_computer.git",
+    "credentialId": "takasa_replay_computer"
+  },
+  {
+    "owner": "Sector14",
+    "name": "replay_common",
+    "url": "git@github.com:Sector14/replay_common.git",
+    "credentialId": "sector14_replay_common'",
+    "testingOnly": "true"
+  },
+  {
+    "owner": "Sector14",
+    "name": "replay_arcade",
+    "url": "git@github.com:Sector14/replay_arcade.git",
+    "credentialId": "sector14_replay_arcade'",
+    "testingOnly": "true"
+  },
+  {
+     "owner": "Sector14",
+     "name": "acorn_electron",
+     "url": "https://github.com/Sector14/acorn-electron-core.git",
+     "branch": "develop'",
+     "disabled": "true"
+  }
+]
