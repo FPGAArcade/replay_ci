@@ -49,50 +49,56 @@ def generateSeedJobs(repos, isProduction) {
 
     String job_name = "seed_jobs/${repo.owner}-${repo.name}-seeder"
 
-    job(job_name) {
-      description("Seed job for ${repo.url}.")
-      parameters {
-        // REVIEW: Don't really want these as ui editable params, better option?
-        stringParam('param_repo_owner', repo.owner, 'Do NOT modify')
-        stringParam('param_repo_name', repo.name, 'Do NOT modify')
-        credentialsParam('param_repo_credential_id') {
-          description('Do NOT modify')
-          defaultValue(repo.credentialId)
-        }
-        stringParam('param_repo_url', repo.url, 'Do Not modify')
-      }
-      // TODO: Switch to multiscm with replay_ci as extra repo
-      scm {
-        git {
-          remote {
-            url(repo.url)
-            credentials(repo.credentialId)
-          }
-          branch('master')
-          extensions {
-            pathRestriction {
-              includedRegions('_cores.txt')
-              excludedRegions('')
-            }
-          }
-        }
-      }
-      triggers {
-        gitHubPushTrigger()
-      }
-      steps {
-        jobDsl {
-          scriptText(seed_script)
-          removedJobAction('DELETE')
-          removedViewAction('DELETE')
-          removedConfigFilesAction('DELETE')
-        }
-      }
-      logRotator {
-        numToKeep(20)
-      }
-    }
+    createSeedJob(job_name, repo, seed_script)
 
     queue(job_name)
   }
+}
+
+def createSeedJob(jobName, repo, seedScript) {
+
+  job(jobName) {
+    description("Seed job for ${repo.url}.")
+    parameters {
+      // REVIEW: Don't really want these as ui editable params, better option?
+      stringParam('param_repo_owner', repo.owner, 'Do NOT modify')
+      stringParam('param_repo_name', repo.name, 'Do NOT modify')
+      credentialsParam('param_repo_credential_id') {
+        description('Do NOT modify')
+        defaultValue(repo.credentialId)
+      }
+      stringParam('param_repo_url', repo.url, 'Do Not modify')
+    }
+    // TODO: Switch to multiscm with replay_ci as extra repo
+    scm {
+      git {
+        remote {
+          url(repo.url)
+          credentials(repo.credentialId)
+        }
+        branch('master')
+        extensions {
+          pathRestriction {
+            includedRegions('_cores.txt')
+            excludedRegions('')
+          }
+        }
+      }
+    }
+    triggers {
+      gitHubPushTrigger()
+    }
+    steps {
+      jobDsl {
+        scriptText(seedScript)
+        removedJobAction('DELETE')
+        removedViewAction('DELETE')
+        removedConfigFilesAction('DELETE')
+      }
+    }
+    logRotator {
+      numToKeep(20)
+    }
+  }
+
 }

@@ -29,19 +29,11 @@ class Core {
 }
 
 // -----------------------------------------------------------------------------
-// Globals
-// -----------------------------------------------------------------------------
-
-Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
-                          credentialId: param_repo_credential_id, url: param_repo_url)
-
-def configuration = new HashMap()
-
-// -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
 
-// Env variables
+// Wrap environment variables
+def configuration = new HashMap()
 def binding = getBinding()
 configuration.putAll(binding.getVariables())
 
@@ -49,42 +41,12 @@ Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODU
 
 out.println("Running on " + (isProduction ? "PRODUCTION" : "TEST") + " server.")
 
-def cores = []
+// Wrap Params
+Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
+                          credentialId: param_repo_credential_id, url: param_repo_url)
 
-def cores_file = readFileFromWorkspace('_cores.txt')
-def unique_names = []
-
-// Extract core and supported targets
-cores_file.eachLine {
-  def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
-
-  if (! matcher.matches()) {
-    out.println("Match failure for _core.txt line: ${it}")
-    return
-  }
-
-  def path = matcher.group('path')
-  def name = coreNameFromPath(path)
-  if (! name) {
-    error "Unable to determine core name for path: ${path}"
-    return
-  }
-
-  def targets = []
-  matcher.group('targets').findAll(/\[(\w+?)\]/) {
-    target -> targets << target[1]
-  }
-
-  // Fail job if duplicate core names detected
-  if (unique_names.contains(name)) {
-    error "Duplicate core name '${name}' in repo ${repo_info.url}. Aborting."
-  }
-  unique_names.add(name)
-
-  cores << new Core(name: name, path: path, targets: targets)
-}
-
-cores.each { core ->
+// Process repo cores
+parseCoresFile('_cores.txt').each { core ->
   createCoreJobs(repo_info, core, true, isProduction)
 }
 
@@ -92,13 +54,54 @@ cores.each { core ->
 // Methods
 // -----------------------------------------------------------------------------
 
-// Use last directory of given path as core name
+// Return Core[] extracted from specified cores file
+def parseCoresFile(coresFile) {
+
+  def cores_file = readFileFromWorkspace(coresFile)
+  def cores = []
+  def unique_names = []
+
+  // Extract core and supported targets
+  cores_file.eachLine {
+    def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
+
+    if (! matcher.matches()) {
+      out.println("Match failure for _core.txt line: ${it}")
+      return
+    }
+
+    def path = matcher.group('path')
+    def name = coreNameFromPath(path)
+    if (! name) {
+      error "Unable to determine core name for path: ${path}"
+      return
+    }
+
+    def targets = []
+    matcher.group('targets').findAll(/\[(\w+?)\]/) {
+      target -> targets << target[1]
+    }
+
+    // Fail job if duplicate core names detected
+    if (unique_names.contains(name)) {
+      error "Duplicate core name '${name}'. Aborting."
+    }
+    unique_names.add(name)
+
+    cores << new Core(name: name, path: path, targets: targets)
+  }
+
+  return cores
+}
+
+// Return last directory of given path as core name
 def coreNameFromPath(path) {
   def matcher = path =~ /.*?\/*(\w+)\s*$/
 
   return matcher.matches() ? matcher.group(1) : null
 }
 
+// Create separate build job for all supported targets of the specified core
 def createCoreJobs(repo, core, queueNewJobs, isProduction) {
 
   String job_folder = "${repo.owner}-${repo.name}"
