@@ -127,7 +127,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
     job(job_name) {
       description("Autocreated build job for ${job_name}")
       properties {
-        githubProjectUrl("https://github.com/${repo.owner}/${repo.name}")
+        githubProjectUrl("https://github.com/${repo.owner}/${repo.name}/")
       }
       multiscm {
         // Jenkins is not able to determine other core build deps currently
@@ -212,6 +212,8 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
           notifyRepeatedFailure(true)
           notifySuccess(true)
           notifyUnstable(true)
+          commitInfoChoice('NONE')
+          includeCustomMessage(false)
         }
       }
       wrappers {
