@@ -202,8 +202,8 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
           onlyIfSuccessful()
         }
         slackNotifier {
-          startNotification(true)
-          notifyAborted(true)
+          startNotification(false)
+          notifyAborted(false)
           notifyBackToNormal(true)
           notifyEveryFailure(true)
           notifyFailure(true)
