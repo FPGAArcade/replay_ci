@@ -42,6 +42,6 @@
      "name": "acorn_electron",
      "url": "https://github.com/Sector14/acorn-electron-core.git",
      "branch": "develop'",
-     "disabled": "true"
+     "disabled": "false"
   }
 ]
