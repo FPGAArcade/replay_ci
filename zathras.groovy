@@ -12,7 +12,7 @@ import groovy.json.JsonSlurper
 // TODO: seed jobs assume "master" branch is used for development which is true of
 //       replay_ repos but will want to be configurable to account for other
 //       repos using develop
-// TODO: Support not monolythic repos without requiring subdir + _cores.txt
+// TODO: Support none monolythic repos without requiring subdir + _cores.txt
 
 // -----------------------------------------------------------------------------
 // Globals
@@ -44,6 +44,9 @@ def generateSeedJobs(repos, isProduction) {
   String seed_script = readFileFromWorkspace('seed_job.groovy')
 
   repos.each { repo ->
+    if (repo.disabled)
+      out.println("Repo is disabled ${repo.name}")
+
     if ( (repo.testingOnly && isProduction) || repo.disabled)
       return
 
