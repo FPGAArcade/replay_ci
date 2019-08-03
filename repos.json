@@ -27,14 +27,14 @@
     "owner": "Sector14",
     "name": "replay_common",
     "url": "git@github.com:Sector14/replay_common.git",
-    "credentialId": "sector14_replay_common'",
+    "credentialId": "sector14_replay_common",
     "testingOnly": true
   },
   {
     "owner": "Sector14",
     "name": "replay_arcade",
     "url": "git@github.com:Sector14/replay_arcade.git",
-    "credentialId": "sector14_replay_arcade'",
+    "credentialId": "sector14_replay_arcade",
     "testingOnly": true
   },
   {
