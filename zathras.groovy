@@ -24,28 +24,32 @@ configuration.putAll(binding.getVariables())
 
 Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
 
+def repoDefaults = ['disabled': false, 'branch': 'master']
+
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
 out.println("Running on " + (isProduction ? "PRODUCTION" : "TEST") + " server.")
 
 def jsonSlurper = new JsonSlurper()
-def repo_list = jsonSlurper.parseText(readFileFromWorkspace('repos.json'))
+def repoList = jsonSlurper.parseText(readFileFromWorkspace('repos.json'))
 
-generateSeedJobs(repo_list, isProduction)
+generateSeedJobs(repoList, repoDefaults, isProduction)
 
 // -----------------------------------------------------------------------------
 // Methods
 // -----------------------------------------------------------------------------
 
-def generateSeedJobs(repos, isProduction) {
+def generateSeedJobs(repos, repoDefaults, isProduction) {
   folder('seed_jobs')
 
   String seed_script = readFileFromWorkspace('seed_job.groovy')
 
-  repos.each { repo ->
+  repos.each { repo_overrides ->
+    def repo = repoDefaults + repo_overrides
+
     if (repo.disabled)
-      out.println("Repo is disabled ${repo.name}")
+      out.println("Skipping disabled repo: ${repo.name}")
 
     if ( (repo.testingOnly && isProduction) || repo.disabled)
       return
@@ -71,6 +75,7 @@ def createSeedJob(jobName, repo, seedScript) {
         defaultValue(repo.credentialId)
       }
       stringParam('param_repo_url', repo.url, 'Do Not modify')
+      stringParam('param_repo_branch', repo.branch, 'Do Not modify')
     }
     // TODO: Switch to multiscm with replay_ci as extra repo
     scm {
