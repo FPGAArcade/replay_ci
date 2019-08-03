@@ -20,6 +20,7 @@ class Repo {
   String name
   String credentialId
   String url
+  String branch
 }
 
 class Core {
@@ -43,7 +44,8 @@ out.println("Running on " + (isProduction ? "PRODUCTION" : "TEST") + " server.")
 
 // Wrap Params
 Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
-                          credentialId: param_repo_credential_id, url: param_repo_url)
+                          credentialId: param_repo_credential_id, url: param_repo_url,
+                          branch: param_repo_branch)
 
 // Process repo cores
 parseCoresFile('_cores.txt').each { core ->
@@ -166,7 +168,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                 excludedRegions('')
               }
             }
-            branch('master')
+            branch(repo.branch)
           }
         }
       }

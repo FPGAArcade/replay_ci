@@ -84,7 +84,7 @@ def createSeedJob(jobName, repo, seedScript) {
           url(repo.url)
           credentials(repo.credentialId)
         }
-        branch('master')
+        branch(repo.branch)
         extensions {
           pathRestriction {
             includedRegions('_cores.txt')
