@@ -260,6 +260,9 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
           pattern("*.zip")
           onlyIfSuccessful()
         }
+        fingerprint {
+          targets("*.zip,${repo.name}/${core.path}/sdcard/**")
+        }
         slackNotifier {
           startNotification(false)
           notifyAborted(false)
