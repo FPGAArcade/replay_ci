@@ -243,8 +243,8 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
 
               # TODO: Determine API version
               VERSION=`git describe --tags --always --long`
-              DATE=`date -u '+%Y%m%d'`
-              RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_#\${BUILD_NUMBER}_\${VERSION}.zip"
+              DATE=`date -u '+%Y%m%d_%H%M'`
+              RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_\${VERSION}.zip"
 
               echo "Creating release zip \${RELEASE_ZIP}"
 
