@@ -130,6 +130,28 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
       description("Autocreated build job for ${job_name}")
       properties {
         githubProjectUrl("https://github.com/${repo.owner}/${repo.name}/")
+        promotions {
+          promotion {
+            name("Stable Release")
+            icon("star-gold")
+            conditions {
+              manual("")
+            }
+            wrappers {
+              /* build wrappers, e.g. credentialsBinding */
+            }
+            actions {
+              copyArtifacts("\${PROMOTED_JOB_NAME}") {
+                buildSelector {
+                    buildNumber("\${PROMOTED_NUMBER}")
+                  }
+                includePatterns("*.zip")
+                // TODO: Carry through build meta to allow computers/console/... group to be used?
+                targetDirectory("/home/jenkins/www/stable/${core_target}/${core.name}/")
+              }
+            }
+          }
+        }
       }
       multiscm {
         // Jenkins is not able to determine other core build deps currently
