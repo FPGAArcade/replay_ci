@@ -206,7 +206,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               hash python 2>/dev/null || { echo >&2 "python required but not found.  Aborting."; exit 1; }
 
               python --version
-              set
+
               ######################################################################
               # Build Settings
               ######################################################################
