@@ -177,7 +177,17 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
       }
       steps {
         shell("""\
+              #!/bin/bash
+              # Crude packaging script for releases
+              hash zip 2>/dev/null || { echo >&2 "zip required but not found.  Aborting."; exit 1; }
+              hash git 2>/dev/null || { echo >&2 "git required but not found.  Aborting."; exit 1; }
+              hash python 2>/dev/null || { echo >&2 "python required but not found.  Aborting."; exit 1; }
+
               python --version
+
+              ######################################################################
+              # Build Settings
+              ######################################################################
 
               # Create local settings if this is a replay_common repo
               [ -d "replay_common/scripts/" ] && cat << EOF > replay_common/scripts/local_settings.py
@@ -193,14 +203,39 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
 
               EOF
 
-              cd ${repo.name}/${core.path}
-              python rmake.py infer --target ${core_target}
+              ######################################################################
+              # Build
+              ######################################################################
+
+              pushd "${repo.name}/${core.path}" || exit \$?
+              python rmake.py infer --target ${core_target} || exit \$?
+              popd
+
+              ######################################################################
+              # Package
+              ######################################################################
+
+              # Clean up prior build zip artifacts
+              rm *.zip
+              pushd "${repo.name}/${core.path}/sdcard" || exit \$?
+
+              # TODO: Determine API version
+              VERSION=`git describe --tags --always --long`
+              DATE=`date -u '+%Y%m%d'`
+              RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_\${VERSION}.zip"
+
+              echo "Creating release zip \${RELEASE_ZIP}"
+
+              zip "\${RELEASE_ZIP}" *
+              popd
+              mv "${repo.name}/${core.path}/sdcard/\${RELEASE_ZIP}" .
+
               exit \$?
               """.stripIndent())
       }
       publishers {
         archiveArtifacts {
-          pattern("${repo.name}/${core.path}/sdcard/**")
+          pattern("*.zip")
           onlyIfSuccessful()
         }
         slackNotifier {
