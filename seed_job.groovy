@@ -206,7 +206,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               hash python 2>/dev/null || { echo >&2 "python required but not found.  Aborting."; exit 1; }
 
               python --version
-
+              set
               ######################################################################
               # Build Settings
               ######################################################################
@@ -244,7 +244,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               # TODO: Determine API version
               VERSION=`git describe --tags --always --long`
               DATE=`date -u '+%Y%m%d'`
-              RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_\${VERSION}.zip"
+              RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_#\${BUILD_NUMBER}_\${VERSION}.zip"
 
               echo "Creating release zip \${RELEASE_ZIP}"
 
