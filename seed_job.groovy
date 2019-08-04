@@ -147,7 +147,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                   }
                 includePatterns("*.zip")
                 // TODO: Carry through build meta to allow computers/console/... group to be used?
-                targetDirectory("/home/jenkins/www/stable/${core_target}/${core.name}/")
+                targetDirectory("/home/jenkins/www/releases/stable/${core_target}/${core.name}/")
               }
             }
           }
