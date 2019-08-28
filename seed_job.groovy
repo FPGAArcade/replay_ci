@@ -122,8 +122,13 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                                        replay_lib/.*
                                        replay_targets/.*
                                     """.stripIndent()
+    String replay_core_includes = """\
+                                    ${core.path}/rtl/.*
+                                    ${core.path}/sdcard/.*
+                                  """.stripIndent()
+
     if (repo.name == "replay_common") {
-      replay_common_includes = replay_common_includes.concat("${core.path}/.*")
+      replay_common_includes = replay_common_includes.concat(replay_core_includes)
     }
 
     job(job_name) {
@@ -186,7 +191,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
             extensions {
               relativeTargetDirectory(repo.name)
               pathRestriction {
-                includedRegions("${core.path}/.*")
+                includedRegions(replay_core_includes)
                 excludedRegions('')
               }
             }
