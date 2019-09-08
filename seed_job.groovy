@@ -131,6 +131,8 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
       replay_common_includes = replay_common_includes.concat(replay_core_includes)
     }
 
+    String release_channel = isProduction ? "#build_releases" : "#build_notify_test"
+
     job(job_name) {
       description("Autocreated build job for ${job_name}")
       properties {
@@ -167,7 +169,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                     <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP}|Download Zip>
                     EOF
 
-                    curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"#build_releases\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
+                    curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
 
                     exit \$?
                     """.stripIndent())
