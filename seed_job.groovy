@@ -154,7 +154,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                   }
                 includePatterns("*.zip")
                 // TODO: Carry through build meta to allow computers/console/... group to be used?
-                targetDirectory("/home/jenkins/www/releases/stable/${core_target}/${core.name}/")
+                targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
               }
               // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
               // TODO: Using build log to determine the name of the release zip artifact is hacky. See what json api holds.
@@ -164,7 +164,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
 
                     read -d '' SLACK_MESSAGE <<EOF
                     New stable release of ${core.name} for the ${core_target}.
-                    <https://build.fpgaarcade.com/releases/stable/${core_target}/${core.name}/\${RELEASE_ZIP}|Download Zip>
+                    <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP}|Download Zip>
                     EOF
 
                     curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"#build_releases\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
