@@ -143,7 +143,9 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               manual("")
             }
             wrappers {
-              /* build wrappers, e.g. credentialsBinding */
+              credentialsBinding {
+                string('slackwebhookurl', 'slackwebhookurl')
+              }
             }
             actions {
               copyArtifacts("\${PROMOTED_JOB_NAME}") {
@@ -154,6 +156,21 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                 // TODO: Carry through build meta to allow computers/console/... group to be used?
                 targetDirectory("/home/jenkins/www/releases/stable/${core_target}/${core.name}/")
               }
+              // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
+              // TODO: Using build log to determine the name of the release zip artifact is hacky. See what json api holds.
+              shell("""\
+                    #!/bin/bash
+                    RELEASE_ZIP=`grep -a "Creating release zip" "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/log" | cut -d " " -f4`
+
+                    read -d '' SLACK_MESSAGE <<EOF
+                    New stable release of ${core.name} for the ${core_target}.
+                    <https://build.fpgaarcade.com/releases/stable/${core_target}/${core.name}/\${RELEASE_ZIP}|Download Zip>
+                    EOF
+
+                    curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"#build_releases\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
+
+                    exit \$?
+                    """.stripIndent())
             }
           }
         }
