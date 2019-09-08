@@ -162,7 +162,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               // TODO: Using build log to determine the name of the release zip artifact is hacky. See what json api holds.
               shell("""\
                     #!/bin/bash
-                    RELEASE_ZIP=`grep -a "RELEASE_ZIP_NAME:" "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/log" | cut -d " " -f2 | awk '{$1=$1}1'`
+                    RELEASE_ZIP=`grep -a "RELEASE_ZIP_NAME:" "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/log" | cut -d " " -f2 | awk '{\$1=\$1}1'`
 
                     read -d '' SLACK_MESSAGE <<EOF
                     New stable release of ${core.name} for the ${core_target}.
