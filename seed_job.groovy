@@ -166,7 +166,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
 
                     read -d '' SLACK_MESSAGE <<EOF
                     New stable release of ${core.name} for the ${core_target}.
-                    <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP}|Download Zip>
+                    Download: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP}|\${RELEASE_ZIP}>
                     EOF
 
                     curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
