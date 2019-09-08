@@ -154,21 +154,6 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                 // TODO: Carry through build meta to allow computers/console/... group to be used?
                 targetDirectory("/home/jenkins/www/releases/stable/${core_target}/${core.name}/")
               }
-              slackNotifier {
-                startNotification(false)
-                notifyAborted(false)
-                notifyBackToNormal(false)
-                notifyEveryFailure(false)
-                notifyFailure(false)
-                notifyNotBuilt(false)
-                notifyRegression(false)
-                notifyRepeatedFailure(false)
-                notifySuccess(true)
-                notifyUnstable(false)
-                commitInfoChoice('NONE')
-                includeCustomMessage(false)
-                room('#build_notifications,#build_releases')
-              }
             }
           }
         }
