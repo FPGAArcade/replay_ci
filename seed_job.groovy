@@ -160,7 +160,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               // TODO: Using build log to determine the name of the release zip artifact is hacky. See what json api holds.
               shell("""\
                     #!/bin/bash
-                    RELEASE_ZIP=`grep -a "Creating release zip" "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/log" | cut -d " " -f4`
+                    RELEASE_ZIP=`grep -a "RELEASE_ZIP_NAME:" "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/log" | cut -d " " -f2 | awk '{$1=$1}1'`
 
                     read -d '' SLACK_MESSAGE <<EOF
                     New stable release of ${core.name} for the ${core_target}.
@@ -268,7 +268,8 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               DATE=`date -u '+%Y%m%d_%H%M'`
               RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_\${VERSION}.zip"
 
-              echo "Creating release zip \${RELEASE_ZIP}"
+              # NOTE: Do not change the RELEASE_ZIP_NAME: tag. It is parsed during promotion process.
+              echo "RELEASE_ZIP_NAME: \${RELEASE_ZIP}"
 
               zip "\${RELEASE_ZIP}" *
               popd
