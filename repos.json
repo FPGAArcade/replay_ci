@@ -19,6 +19,12 @@
   },
   {
     "owner": "Takasa",
+    "name": "replay_amiga",
+    "url": "git@github.com:Takasa/replay_amiga.git",
+    "credentialId": "takasa_replay_amiga"
+  },
+  {
+    "owner": "Takasa",
     "name": "replay_computer",
     "url": "git@github.com:Takasa/replay_computer.git",
     "credentialId": "takasa_replay_computer"
