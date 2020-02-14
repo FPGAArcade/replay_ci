@@ -155,18 +155,23 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
                     buildNumber("\${PROMOTED_NUMBER}")
                   }
                 includePatterns("*.zip")
-                // TODO: Carry through build meta to allow computers/console/... group to be used?
                 targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
               }
               // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
               // TODO: Using build log to determine the name of the release zip artifact is hacky. See what json api holds.
+              // TODO: Remove hard coded target directory for core zips here and above.
               shell("""\
                     #!/bin/bash
                     RELEASE_ZIP=`grep -a "Creating release zip" "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/log" | cut -d " " -f4 | awk '{\$1=\$1}1'`
 
+                    # Update "latest" sym link
+                    RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core.name}"
+                    ln -sf "\${RELEASE_DIR}/\${RELEASE_ZIP}" "\${RELEASE_DIR}/latest"
+
                     read -d '' SLACK_MESSAGE <<EOF
                     New stable release of ${core.name} for the ${core_target}.
                     Download: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP}|\${RELEASE_ZIP}>
+                    Previous Builds: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/>
                     EOF
 
                     curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
@@ -254,7 +259,7 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               ######################################################################
 
               pushd "${repo.name}/${core.path}" || exit \$?
-              python rmake.py infer --target ${core_target} || exit \$?
+              python rmake.py infer --target "${core_target}" || exit \$?
               popd
 
               ######################################################################
