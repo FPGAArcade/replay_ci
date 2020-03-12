@@ -234,7 +234,13 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
               hash git 2>/dev/null || { echo >&2 "git required but not found.  Aborting."; exit 1; }
               hash python 2>/dev/null || { echo >&2 "python required but not found.  Aborting."; exit 1; }
 
-              python --version
+              python_major_v=\$(python -c"import sys; print(sys.version_info.major)")
+              python_minor_v=\$(python -c"import sys; print(sys.version_info.minor)")
+
+              if [[ "\${python_major_v}" -lt "3" || ("\${python_major_v}" -eq "3" && "\${python_minor_v}" -lt "6") ]]; then
+                  echo "Build system requires python 3.6 or greater (\${python_major_v}.\${python_minor_v} installed)"
+                  exit 1
+              fi
 
               ######################################################################
               # Build Settings
@@ -310,21 +316,6 @@ def createCoreJobs(repo, core, queueNewJobs, isProduction) {
           notifyUnstable(true)
           commitInfoChoice('NONE')
           includeCustomMessage(false)
-        }
-      }
-      wrappers {
-        configure { node ->
-          node / 'buildWrappers' / 'ruby-proxy-object' / 'ruby-object'(['ruby-class': 'Jenkins::Tasks::BuildWrapperProxy', 'pluginid': 'pyenv']) {
-            'object'(['ruby-class': 'PyenvWrapper', 'pluginid': 'pyenv']) {
-              'pyenv_repository'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'https://github.com/yyuu/pyenv.git')
-              'version'(['ruby-class': 'String', 'pluginid': 'pyenv'], '3.6.5')
-              'pyenv__revision'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'master')
-              'pyenv__root'(['ruby-class': 'String', 'pluginid': 'pyenv'], '$HOME/.pyenv')
-              'ignore__local__version'(['ruby-class': 'FalseClass', 'pluginid': 'pyenv'])
-              'pip__list'(['ruby-class': 'String', 'pluginid': 'pyenv'], 'tox')
-            }
-            'pluginid'([pluginid: 'pyenv', 'ruby-class': 'String'], 'pyenv')
-          }
         }
       }
     }
