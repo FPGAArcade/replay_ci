@@ -48,7 +48,7 @@ Repo repo_info = new Repo(owner: param_repo_owner, name: param_repo_name,
                           branch: param_repo_branch)
 
 // Process repo cores
-parseCoresFile('_cores.txt').each { core ->
+parseCoresFile(repo_info.name+'/_cores.txt').each { core ->
   createCoreJobs(repo_info, core, true, isProduction)
 }
 
