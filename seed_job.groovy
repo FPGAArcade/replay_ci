@@ -60,6 +60,9 @@ parseCoresFile('_cores.txt').each { core ->
 def parseCoresFile(coresFile) {
 
   def cores_file = readFileFromWorkspace(coresFile)
+  out.println("Reading " + coresFile + " from workspace")
+  out.println(cores_file)
+
   def cores = []
   def unique_names = []
 
