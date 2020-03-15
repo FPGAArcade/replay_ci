@@ -88,12 +88,16 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
 
       source_includes[repo_path].add(dep_path+"/_deps.txt")
       source_includes[repo_path].add(dep_path+"/_srcs.txt")
+      source_includes[repo_path].add(dep_path+"/.*/_deps.txt")
+      source_includes[repo_path].add(dep_path+"/.*/_srcs.txt")
     }
 
     String job_name = createCoreTargetJob(repo, core, core_target,
                                           source_includes, isProduction)
 
     // If new job created rather than updated/removed, trigger build
+    // NOTE: In the case of job update, it shouldn't matter if existing
+    //       build job triggers before or after seed job when srcs/deps change.
     if (!jenkins.model.Jenkins.instance.getItemByFullName(job_name)) {
       queue(job_name)
     }
