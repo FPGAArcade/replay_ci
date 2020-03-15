@@ -54,10 +54,15 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
 
   // Create separate build job for all supported targets of the core
   core.targets.each { core_target ->
+    out.println("Querying for core sources")
+    out.println("  Repo   : ${repo.name}")
+    out.println("  Core   : ${core.name}")
+    out.println("  Target : ${core_target}")
+    out.println("  CWD    : ${workspace}")
+
     String source_files = coreSourceFiles(repo, core, core_target, workspace)
-    out.println(source_files)
-    // TODO: change source files to paths relative to workspace
-    // TODO: split source files to monitor by repo path
+
+    // TODO: split source files by repo path
 
     String job_name = createCoreTargetJob(repo, core, core_target, isProduction)
 
@@ -123,24 +128,13 @@ def coreNameFromPath(path) {
   return matcher.matches() ? matcher.group(1) : null
 }
 
+// Runs build system and returns list of source files for core/target
+// relative to workspace root.
 def coreSourceFiles(repo, core, core_target, workspace_path) {
-  out.println("Getting core source files")
-  out.println("Repo   : ${repo.name}")
-  out.println("Core   : ${core.name}")
-  out.println("Target : ${core_target}")
-  out.println("CWD    : ${workspace_path}")
-
   def sout = new StringBuilder()
   def serr = new StringBuilder()
   def working_dir = new File("${workspace_path}/${repo.name}/${core.path}")
 
-  // TODO: Read/run a script from replay_ci and move most embedded shell scripts
-  //       into ci repo.
-  // TODO: Missing python version test, although build system should really check that on run
-  //       and error out
-
-  //def p = "bash -c ls -l".execute([], working_dir)
-  //def p = "python --version".execute([], working_dir)
   def p = "python rmake.py infer --target ${core_target}".execute([], working_dir)
   p.consumeProcessOutput(sout, serr)
   p.waitFor()
@@ -148,9 +142,15 @@ def coreSourceFiles(repo, core, core_target, workspace_path) {
   // TODO: Check return code
   // TODO: Add save arg to early out build. Should build.srcs.meta go into a build dir?
   //       maybe make the build dir name be overridable?
-  //out.println(sout)
 
   def sources_list = readFileFromWorkspace("${repo.name}/${core.path}/build.srcs.meta")
+
+  // Change paths to relative to workspace root (+1 to remove leading slash)
+  def sources_relative = []
+  sources_list.eachLine { line ->
+    sources_relative << line.substring(workspace_path.length()+1)
+  }
+
   return sources_list
 }
 
