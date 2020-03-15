@@ -254,7 +254,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
           }
         }
         extensions {
-          relativeTargetDirectory('')
+          relativeTargetDirectory('replay_common')
           pathRestriction {
             includedRegions(source_includes['replay_common'].join('\n'))
             excludedRegions('')
@@ -270,7 +270,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
             credentials(repo.credentialId)
           }
           extensions {
-            relativeTargetDirectory('')
+            relativeTargetDirectory(repo.name)
             pathRestriction {
               includedRegions(source_includes[repo.name].join('\n'))
               excludedRegions('')
