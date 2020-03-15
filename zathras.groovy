@@ -9,9 +9,6 @@ import groovy.json.JsonSlurper
 
 // TODO: Remove owner/name and add projectUrl and base folder name?
 //       Once loading from json, sanity check that no repos use same base name.
-// TODO: seed jobs assume "master" branch is used for development which is true of
-//       replay_ repos but will want to be configurable to account for other
-//       repos using develop
 // TODO: Support none monolythic repos without requiring subdir + _cores.txt
 
 // -----------------------------------------------------------------------------
