@@ -54,23 +54,40 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
 
   // Create separate build job for all supported targets of the core
   core.targets.each { core_target ->
-    out.println("Querying for core sources")
+    out.println("Configuring build job for:-")
     out.println("  Repo   : ${repo.name}")
     out.println("  Core   : ${core.name}")
     out.println("  Target : ${core_target}")
     out.println("  CWD    : ${workspace}")
 
-    ArrayList source_files = coreSourceFiles(repo, core, core_target, workspace)
+    generateBuildMeta(repo, core, core_target, workspace)
+    ArrayList source_files = parseBuildMetaPaths("${repo.name}/${core.path}/build.srcs.meta", workspace)
+    ArrayList dep_paths = parseBuildMetaPaths("${repo.name}/${core.path}/build.deps.meta", workspace)
 
     // Split source files by repo
     Map source_includes = [:]
     source_files.each { item ->
       String[] paths = item.split('/', 2)
+      String repo_path = paths[0]
+      String source_path = paths[1]
 
-      if (source_includes.get(paths[0]) == null)
-        source_includes.put(paths[0], [paths[1]])
-      else
-        source_includes[paths[0]].add(paths[1])
+      if (source_includes.get(repo_path) == null)
+        source_includes.put(repo_path, [])
+
+      source_includes[repo_path].add(source_path)
+    }
+
+    // Also trigger rebuild on _deps.txt/_srcs.txt files in any dep directories
+    dep_paths.each { item ->
+      String[] paths = item.split('/', 2)
+      String repo_path = paths[0]
+      String dep_path = paths[1]
+
+      if (source_includes.get(repo_path) == null)
+        source_includes.put(repo_path, [])
+
+      source_includes[repo_path].add(dep_path+"/_deps.txt")
+      source_includes[repo_path].add(dep_path+"/_srcs.txt")
     }
 
     String job_name = createCoreTargetJob(repo, core, core_target,
@@ -138,30 +155,30 @@ def coreNameFromPath(path) {
   return matcher.matches() ? matcher.group(1) : null
 }
 
-// Runs build system and returns list of source files for core/target
-// relative to workspace_path.
-def coreSourceFiles(repo, core, core_target, workspace_path) {
-  def sout = new StringBuilder()
-  def serr = new StringBuilder()
+def generateBuildMeta(repo, core, core_target, workspace_path) {
   def working_dir = new File("${workspace_path}/${repo.name}/${core.path}")
 
   def p = "python rmake.py infer --target ${core_target}".execute([], working_dir)
-  p.consumeProcessOutput(sout, serr)
+  p.consumeProcessOutput()
   p.waitFor()
 
+  // TODO: Switch to timeout?
   // TODO: Check return code
-  // TODO: Add save arg to early out build. Should build.srcs.meta go into a build dir?
-  //       maybe make the build dir name be overridable?
+}
 
-  String sources_list = readFileFromWorkspace("${repo.name}/${core.path}/build.srcs.meta")
+// return ArrayList of paths relative to work space directory.
+def parseBuildMetaPaths(meta_filename, workspace_path) {
+  String meta = readFileFromWorkspace(meta_filename)
+
+  def trim_count = workspace_path.length()+1
 
   // Change paths to relative to workspace root (+1 to remove leading slash)
-  ArrayList sources_relative = []
-  sources_list.eachLine { line ->
-    sources_relative.add(line.substring(workspace_path.length()+1))
+  ArrayList meta_relative = []
+  meta.eachLine { line ->
+    meta_relative.add(line.substring(trim_count))
   }
 
-  return sources_relative
+  return meta_relative
 }
 
 def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) {
@@ -171,22 +188,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
   folder("${job_folder}/${core.name}")
 
   String job_name = "${job_folder}/${core.name}/${core_target}"
-
-  // Other repos need to rebuild only when replay_common framework changes
-  // However, replay_common itself also needs to rebuild if loader core changes.
-  String replay_common_includes = """\
-                                      lib/.*
-                                      replay_lib/.*
-                                      replay_targets/.*
-                                  """.stripIndent()
-  String replay_core_includes = """\
-                                  ${core.path}/rtl/.*
-                                  ${core.path}/sdcard/.*
-                                """.stripIndent()
-
-  if (repo.name == "replay_common") {
-    replay_common_includes = replay_common_includes.concat(replay_core_includes)
-  }
 
   String release_channel = isProduction ? "#build_releases" : "#build_notify_test"
 
