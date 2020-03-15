@@ -129,7 +129,13 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
       }
     }
     triggers {
-      gitHubPushTrigger()
+      if (isProduction)
+        gitHubPushTrigger()
+      else {
+        pollSCM {
+          scmpoll_spec('*/2 * * * *')
+        }
+      }
     }
     steps {
       jobDsl {
