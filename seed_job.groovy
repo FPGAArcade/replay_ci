@@ -60,9 +60,11 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
     out.println("  Target : ${core_target}")
     out.println("  CWD    : ${workspace}")
 
+    String build_path = "${repo.name}/${core.path}/build_${core_target}"
+
     generateBuildMeta(repo, core, core_target, workspace)
-    ArrayList source_files = parseBuildMetaPaths("${repo.name}/${core.path}/build.srcs.meta", workspace)
-    ArrayList dep_paths = parseBuildMetaPaths("${repo.name}/${core.path}/build.deps.meta", workspace)
+    ArrayList source_files = parseBuildMetaPaths("${build_path}/build.srcs.meta", workspace)
+    ArrayList dep_paths = parseBuildMetaPaths("${build_path}/build.deps.meta", workspace)
 
     // Split source files by repo
     Map source_includes = [:]
