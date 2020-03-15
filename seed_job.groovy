@@ -60,11 +60,21 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
     out.println("  Target : ${core_target}")
     out.println("  CWD    : ${workspace}")
 
-    String source_files = coreSourceFiles(repo, core, core_target, workspace)
+    ArrayList source_files = coreSourceFiles(repo, core, core_target, workspace)
 
-    // TODO: split source files by repo path
+    // Split source files by repo
+    Map source_includes = [:]
+    source_files.each { item ->
+      String[] paths = item.split('/', 2)
 
-    String job_name = createCoreTargetJob(repo, core, core_target, isProduction)
+      if (source_includes.get(paths[0]) == null)
+        source_includes.put(paths[0], [paths[1]])
+      else
+        source_includes[paths[0]].add(paths[1])
+    }
+
+    String job_name = createCoreTargetJob(repo, core, core_target,
+                                          source_includes, isProduction)
 
     // If new job created rather than updated/removed, trigger build
     if (!jenkins.model.Jenkins.instance.getItemByFullName(job_name)) {
@@ -129,7 +139,7 @@ def coreNameFromPath(path) {
 }
 
 // Runs build system and returns list of source files for core/target
-// relative to workspace root.
+// relative to workspace_path.
 def coreSourceFiles(repo, core, core_target, workspace_path) {
   def sout = new StringBuilder()
   def serr = new StringBuilder()
@@ -143,18 +153,18 @@ def coreSourceFiles(repo, core, core_target, workspace_path) {
   // TODO: Add save arg to early out build. Should build.srcs.meta go into a build dir?
   //       maybe make the build dir name be overridable?
 
-  def sources_list = readFileFromWorkspace("${repo.name}/${core.path}/build.srcs.meta")
+  String sources_list = readFileFromWorkspace("${repo.name}/${core.path}/build.srcs.meta")
 
   // Change paths to relative to workspace root (+1 to remove leading slash)
-  def sources_relative = []
+  ArrayList sources_relative = []
   sources_list.eachLine { line ->
-    sources_relative << line.substring(workspace_path.length()+1)
+    sources_relative.add(line.substring(workspace_path.length()+1))
   }
 
-  return sources_list
+  return sources_relative
 }
 
-def createCoreTargetJob(repo, core, core_target, isProduction) {
+def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) {
   String job_folder = "${repo.owner}-${repo.name}"
   folder(job_folder)
 
@@ -244,9 +254,9 @@ def createCoreTargetJob(repo, core, core_target, isProduction) {
           }
         }
         extensions {
-          relativeTargetDirectory('replay_common')
+          relativeTargetDirectory('')
           pathRestriction {
-            includedRegions(replay_common_includes)
+            includedRegions(source_includes['replay_common'].join('\n'))
             excludedRegions('')
           }
         }
@@ -260,9 +270,9 @@ def createCoreTargetJob(repo, core, core_target, isProduction) {
             credentials(repo.credentialId)
           }
           extensions {
-            relativeTargetDirectory(repo.name)
+            relativeTargetDirectory('')
             pathRestriction {
-              includedRegions(replay_core_includes)
+              includedRegions(source_includes[repo.name].join('\n'))
               excludedRegions('')
             }
           }
