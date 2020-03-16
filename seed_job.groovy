@@ -164,7 +164,7 @@ def coreNameFromPath(path) {
 def generateBuildMeta(repo, core, core_target, workspace_path) {
   def working_dir = new File("${workspace_path}/${repo.name}/${core.path}")
 
-  def p = "python rmake.py infer --target ${core_target}".execute([], working_dir)
+  def p = "python rmake.py infer --target ${core_target} --prep".execute([], working_dir)
   p.consumeProcessOutput()
   p.waitFor()
 
