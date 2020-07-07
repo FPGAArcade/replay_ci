@@ -358,7 +358,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
             echo "Creating release zip \${RELEASE_ZIP}"
 
 
-            zip "\${RELEASE_ZIP}" *
+            zip -r "\${RELEASE_ZIP}" *
             popd
             mv "${repo.name}/${core.path}/sdcard/\${RELEASE_ZIP}" .
 
