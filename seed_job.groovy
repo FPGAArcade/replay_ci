@@ -54,6 +54,10 @@ def config = new Config(isProduction: envmap['PRODUCTION_SERVER'] ? envmap['PROD
 out.println("Running on " + (config.isProduction ? "PRODUCTION" : "TEST") + " server.")
 out.println("Config: ")
 out.println(config.dump())
+if (!config.releasePath)
+  throw new Exception("Required ENV variable RELEASE_PATH not found.")
+if (!config.releaseAPIURL)
+  throw new Exception("Required ENV variable RELEASE_API_URL not found.")
 
 // Wrap Params
 Repo repo = new Repo(owner: param_repo_owner, name: param_repo_name,
@@ -221,8 +225,8 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
           }
           wrappers {
             credentialsBinding {
-              string('credential-slackwebhookurl', 'slackwebhookurl')
-              string('credential-release-api-key', 'release-api-key')
+              string('slackwebhookurl', 'slackwebhookurl')
+              string('release-api-key', 'release-api-key')
             }
           }
           actions {
@@ -235,47 +239,40 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
               targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
             }
             // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
-
-            // TODO: config verification should be done at the time env vars are pulled out.
-            //       fail the entire seed job if they're not available.
-            // TODO: Setting buildDate to the promotion date, not date of build!
-            //       May want to store both?
             shell("""\
                   #!/bin/bash
-
                   hash curl 2>/dev/null || { echo >&2 "curl required but not found.  Aborting."; exit 1; }
-                  [ ! -z "${config.releaseAPIURL}" ] || { echo >&2 "ENV variable RELEASE_API_URL required but not set.  Aborting."; exit 1; }
-                  [ ! -z "${config.releasePath}" ] || { echo >&2 "ENV variable RELEASE_PATH required but not set.  Aborting."; exit 1; }
 
-                  RELEASE_ZIP=`ls "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/archive/${core.name}_${core_target}_*.zip"`
+                  RELEASE_ZIP=`ls "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/archive/${core.name}_${core_target}_"*.zip`
+                  RELEASE_ZIP_NAME=`basename \${RELEASE_ZIP}`
                   RELEASE_DATE=`date -uIseconds`
 
                   # DEPRECATED: Will be removed once Jenkins migrated to docker and new api upload considered stable.
                   # Update "latest" sym link
                   RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core.name}"
-                  ln -sf "\${RELEASE_DIR}/\${RELEASE_ZIP}" "\${RELEASE_DIR}/latest"
+                  ln -sf "\${RELEASE_DIR}/\${RELEASE_ZIP_NAME}" "\${RELEASE_DIR}/latest"
 
-                  echo "Promoting build \${PROMOTED_NUMBNER} to stable release: \${RELEASE_ZIP}"
+                  echo "Promoting build \${PROMOTED_NUMBER} to stable release: \${RELEASE_ZIP}"
                   # Upload to release api
-                  curl --trace-ascii post.txt --request POST \
-                       --header "Authorization: APIKey \${credential-release-api-key}"    \
+                  curl --request POST \
+                       --header "Authorization: APIKey \${release-api-key}" \
                        --form 'buildinfo={
                                   "platformId": "${core_target}",
                                   "coreId": "${core.name}",
                                   "buildType": "stable",
                                   "buildDate": "\${RELEASE_DATE}"
                                 };type=application/json' \
-                       --form 'zipfile=@"\${RELEASE_ZIP}";type=application/zip' \
-                       \${RELEASE_API_URL}/builds/
+                       --form "zipfile=@\\"\${RELEASE_ZIP}\\";type=application/zip" \
+                       \${RELEASE_API_URL}builds/
 
                   # Notify slack
                   read -d '' SLACK_MESSAGE <<EOF
                   New stable release of ${core.name} for the ${core_target}.
-                  Download: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP}|\${RELEASE_ZIP}>
+                  Download: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP_NAME}|\${RELEASE_ZIP_NAME}>
                   Previous Builds: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/>
                   EOF
 
-                  curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${credential-slackwebhookurl}
+                  curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
 
                   exit \$?
                   """.stripIndent())
