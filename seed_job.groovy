@@ -49,12 +49,11 @@ envmap.putAll(binding.getVariables())
 def config = new Config(isProduction: envmap['PRODUCTION_SERVER'] ? envmap['PRODUCTION_SERVER'].toBoolean() : false,
                         workspacePath: envmap['WORKSPACE'],
                         releasePath: envmap['RELEASE_PATH'] ? envmap['RELEASE_PATH'] : null,
-                        releaseAPIURL: envmap['RELEASE_API_URL'] ? envmap['RELEASE_API_URL'] : null
-)
+                        releaseAPIURL: envmap['RELEASE_API_URL'] ? envmap['RELEASE_API_URL'] : null)
 
 out.println("Running on " + (config.isProduction ? "PRODUCTION" : "TEST") + " server.")
 out.println("Config: ")
-map.each{ k, v -> out.println "${k}: ${v}" }
+out.println(config.dump())
 
 // Wrap Params
 Repo repo = new Repo(owner: param_repo_owner, name: param_repo_name,
@@ -222,7 +221,8 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
           }
           wrappers {
             credentialsBinding {
-              string('slackwebhookurl', 'slackwebhookurl')
+              string('credential-slackwebhookurl', 'slackwebhookurl')
+              string('credential-release-api-key', 'release-api-key')
             }
           }
           actions {
@@ -235,14 +235,17 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
               targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
             }
             // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
-            // TODO: ENV var for target dir and api url
-            // TODO: Credentail for API key
+
+            // TODO: config verification should be done at the time env vars are pulled out.
+            //       fail the entire seed job if they're not available.
             // TODO: Setting buildDate to the promotion date, not date of build!
             //       May want to store both?
             shell("""\
                   #!/bin/bash
 
                   hash curl 2>/dev/null || { echo >&2 "curl required but not found.  Aborting."; exit 1; }
+                  [ ! -z "${config.releaseAPIURL}" ] || { echo >&2 "ENV variable RELEASE_API_URL required but not set.  Aborting."; exit 1; }
+                  [ ! -z "${config.releasePath}" ] || { echo >&2 "ENV variable RELEASE_PATH required but not set.  Aborting."; exit 1; }
 
                   RELEASE_ZIP=`ls "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/archive/${core.name}_${core_target}_*.zip"`
                   RELEASE_DATE=`date -uIseconds`
@@ -252,17 +255,18 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                   RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core.name}"
                   ln -sf "\${RELEASE_DIR}/\${RELEASE_ZIP}" "\${RELEASE_DIR}/latest"
 
+                  echo "Promoting build \${PROMOTED_NUMBNER} to stable release: \${RELEASE_ZIP}"
                   # Upload to release api
-                  #curl --trace-ascii post.txt --request POST \
-                  #     --header "Authorization: APIKey ysUY9rbPccgqVY5CHRjWEPiD6yBWCNG74XqhKHYCkaJhA8cxssCeJJG5PBtyeivjCTqZogHmG4RVzvrqPiB5KmHZeVeDGMi8"    \
-                  #     --form 'buildinfo={
-                  #                "platformId": "${core_target}",
-                  #                "coreId": "${core.name}",
-                  #                "buildType": "stable",
-                  #                "buildDate": "\${RELEASE_DATE}"
-                  #              };type=application/json' \
-                  #     --form 'zipfile=@"\${RELEASE_ZIP}";type=application/zip' \
-                  #     https://api.mups.co.uk/builds/
+                  curl --trace-ascii post.txt --request POST \
+                       --header "Authorization: APIKey \${credential-release-api-key}"    \
+                       --form 'buildinfo={
+                                  "platformId": "${core_target}",
+                                  "coreId": "${core.name}",
+                                  "buildType": "stable",
+                                  "buildDate": "\${RELEASE_DATE}"
+                                };type=application/json' \
+                       --form 'zipfile=@"\${RELEASE_ZIP}";type=application/zip' \
+                       \${RELEASE_API_URL}/builds/
 
                   # Notify slack
                   read -d '' SLACK_MESSAGE <<EOF
@@ -271,7 +275,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                   Previous Builds: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/>
                   EOF
 
-                  curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
+                  curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${credential-slackwebhookurl}
 
                   exit \$?
                   """.stripIndent())
