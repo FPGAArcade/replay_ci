@@ -15,6 +15,13 @@
 // Classes
 // -----------------------------------------------------------------------------
 
+class Config {
+  Boolean isProduction
+  String workspace
+  String releasePath
+  String releaseAPIURL
+}
+
 class Repo {
   String owner
   String name
@@ -35,14 +42,23 @@ class Core {
 
 // TODO: Store required settings/consts in a global config
 // Wrap environment variables
-def configuration = new HashMap()
+def envmap = new HashMap()
 def binding = getBinding()
-configuration.putAll(binding.getVariables())
+envmap.putAll(binding.getVariables())
 
-Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
-String workspace = configuration['WORKSPACE']
+def config = new Config(isProduction: envmap['PRODUCTION_SERVER'] ? envmap['PRODUCTION_SERVER'].toBoolean() : false,
+                        workspace: envmap['WORKSPACE'],
+                        releasePath: envmap['RELEASE_PATH'] ? envmap['RELEASE_PATH'] : null,
+                        releaseAPIURL: envmap['RELEASE_API_URL'] ? envmap['RELEASE_API_URL'] : null
+)
+
+// TODO: Switch over to config and remove
+Boolean isProduction = config.isProduction
+String workspace = config.workspace
 
 out.println("Running on " + (isProduction ? "PRODUCTION" : "TEST") + " server.")
+out.println("Config: ")
+map.each{ k, v -> out.println "${k}: ${v}" }
 
 // Wrap Params
 Repo repo = new Repo(owner: param_repo_owner, name: param_repo_name,
@@ -58,13 +74,13 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
     out.println("  Repo   : ${repo.name}")
     out.println("  Core   : ${core.name}")
     out.println("  Target : ${core_target}")
-    out.println("  CWD    : ${workspace}")
+    out.println("  CWD    : ${config.workspace}")
 
     String build_path = "${repo.name}/${core.path}/build_${core_target}"
 
-    generateBuildMeta(repo, core, core_target, workspace)
-    ArrayList source_files = parseBuildMetaPaths("${build_path}/build.srcs.meta", workspace)
-    ArrayList dep_paths = parseBuildMetaPaths("${build_path}/build.deps.meta", workspace)
+    generateBuildMeta(repo, core, core_target, config.workspace)
+    ArrayList source_files = parseBuildMetaPaths("${build_path}/build.srcs.meta", config.workspace)
+    ArrayList dep_paths = parseBuildMetaPaths("${build_path}/build.deps.meta", config.workspace)
 
     // Split source files by repo
     Map source_includes = [:]
@@ -95,7 +111,7 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
     }
 
     String job_name = createCoreTargetJob(repo, core, core_target,
-                                          source_includes, isProduction)
+                                          source_includes, config.isProduction)
 
     // If new job created rather than updated/removed, trigger build
     // NOTE: In the case of job update, it shouldn't matter if existing
@@ -214,6 +230,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
             }
           }
           actions {
+            // DEPRECATED: Will be removed once upload API considered stable
             copyArtifacts("\${PROMOTED_JOB_NAME}") {
               buildSelector {
                   buildNumber("\${PROMOTED_NUMBER}")
@@ -222,16 +239,36 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
               targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
             }
             // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
-            // TODO: Using build log to determine the name of the release zip artifact is hacky. See what json api holds.
-            // TODO: Remove hard coded target directory for core zips here and above.
+            // TODO: ENV var for target dir and api url
+            // TODO: Credentail for API key
+            // TODO: Setting buildDate to the promotion date, not date of build!
+            //       May want to store both?
             shell("""\
                   #!/bin/bash
-                  RELEASE_ZIP=`grep -a "Creating release zip" "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/log" | cut -d " " -f4 | awk '{\$1=\$1}1'`
 
+                  hash curl 2>/dev/null || { echo >&2 "curl required but not found.  Aborting."; exit 1; }
+
+                  RELEASE_ZIP=`ls "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/archive/${core.name}_${core_target}_*.zip"`
+                  RELEASE_DATE=`date -uIseconds`
+
+                  # DEPRECATED: Will be removed once Jenkins migrated to docker and new api upload considered stable.
                   # Update "latest" sym link
                   RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core.name}"
                   ln -sf "\${RELEASE_DIR}/\${RELEASE_ZIP}" "\${RELEASE_DIR}/latest"
 
+                  # Upload to release api
+                  #curl --trace-ascii post.txt --request POST \
+                  #     --header "Authorization: APIKey ysUY9rbPccgqVY5CHRjWEPiD6yBWCNG74XqhKHYCkaJhA8cxssCeJJG5PBtyeivjCTqZogHmG4RVzvrqPiB5KmHZeVeDGMi8"    \
+                  #     --form 'buildinfo={
+                  #                "platformId": "${core_target}",
+                  #                "coreId": "${core.name}",
+                  #                "buildType": "stable",
+                  #                "buildDate": "\${RELEASE_DATE}"
+                  #              };type=application/json' \
+                  #     --form 'zipfile=@"\${RELEASE_ZIP}";type=application/zip' \
+                  #     https://api.mups.co.uk/builds/
+
+                  # Notify slack
                   read -d '' SLACK_MESSAGE <<EOF
                   New stable release of ${core.name} for the ${core_target}.
                   Download: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP}|\${RELEASE_ZIP}>
@@ -351,12 +388,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
             DATE=`date -u '+%Y%m%d_%H%M'`
             RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_\${VERSION}.zip"
 
-            # NOTE: Do not change the RELEASE_ZIP_NAME: tag. It is parsed during promotion process.
             echo "RELEASE_ZIP_NAME: \${RELEASE_ZIP}"
-            # NOTE: This is the old release tag. Kept for now as older build logs contain it but will
-            #       be removed in the future.
-            echo "Creating release zip \${RELEASE_ZIP}"
-
 
             zip -r "\${RELEASE_ZIP}" *
             popd
