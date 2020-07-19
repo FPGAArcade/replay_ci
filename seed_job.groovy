@@ -17,7 +17,7 @@
 
 class Config {
   Boolean isProduction
-  String workspace
+  String workspacePath
   String releasePath
   String releaseAPIURL
 }
@@ -47,16 +47,12 @@ def binding = getBinding()
 envmap.putAll(binding.getVariables())
 
 def config = new Config(isProduction: envmap['PRODUCTION_SERVER'] ? envmap['PRODUCTION_SERVER'].toBoolean() : false,
-                        workspace: envmap['WORKSPACE'],
+                        workspacePath: envmap['WORKSPACE'],
                         releasePath: envmap['RELEASE_PATH'] ? envmap['RELEASE_PATH'] : null,
                         releaseAPIURL: envmap['RELEASE_API_URL'] ? envmap['RELEASE_API_URL'] : null
 )
 
-// TODO: Switch over to config and remove
-Boolean isProduction = config.isProduction
-String workspace = config.workspace
-
-out.println("Running on " + (isProduction ? "PRODUCTION" : "TEST") + " server.")
+out.println("Running on " + (config.isProduction ? "PRODUCTION" : "TEST") + " server.")
 out.println("Config: ")
 map.each{ k, v -> out.println "${k}: ${v}" }
 
@@ -74,13 +70,13 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
     out.println("  Repo   : ${repo.name}")
     out.println("  Core   : ${core.name}")
     out.println("  Target : ${core_target}")
-    out.println("  CWD    : ${config.workspace}")
+    out.println("  CWD    : ${config.workspacePath}")
 
     String build_path = "${repo.name}/${core.path}/build_${core_target}"
 
-    generateBuildMeta(repo, core, core_target, config.workspace)
-    ArrayList source_files = parseBuildMetaPaths("${build_path}/build.srcs.meta", config.workspace)
-    ArrayList dep_paths = parseBuildMetaPaths("${build_path}/build.deps.meta", config.workspace)
+    generateBuildMeta(repo, core, core_target, config)
+    ArrayList source_files = parseBuildMetaPaths("${build_path}/build.srcs.meta", config)
+    ArrayList dep_paths = parseBuildMetaPaths("${build_path}/build.deps.meta", config)
 
     // Split source files by repo
     Map source_includes = [:]
@@ -111,7 +107,7 @@ parseCoresFile(repo.name+'/_cores.txt').each { core ->
     }
 
     String job_name = createCoreTargetJob(repo, core, core_target,
-                                          source_includes, config.isProduction)
+                                          source_includes, config)
 
     // If new job created rather than updated/removed, trigger build
     // NOTE: In the case of job update, it shouldn't matter if existing
@@ -177,8 +173,8 @@ def coreNameFromPath(path) {
   return matcher.matches() ? matcher.group(1) : null
 }
 
-def generateBuildMeta(repo, core, core_target, workspace_path) {
-  def working_dir = new File("${workspace_path}/${repo.name}/${core.path}")
+def generateBuildMeta(repo, core, core_target, config) {
+  def working_dir = new File("${config.workspacePath}/${repo.name}/${core.path}")
 
   def p = "python rmake.py infer --target ${core_target} --prep".execute([], working_dir)
   p.consumeProcessOutput()
@@ -189,10 +185,10 @@ def generateBuildMeta(repo, core, core_target, workspace_path) {
 }
 
 // return ArrayList of paths relative to work space directory.
-def parseBuildMetaPaths(meta_filename, workspace_path) {
+def parseBuildMetaPaths(meta_filename, config) {
   String meta = readFileFromWorkspace(meta_filename)
 
-  def trim_count = workspace_path.length()+1
+  def trim_count = config.workspacePath.length()+1
 
   // Change paths to relative to workspace root (+1 to remove leading slash)
   ArrayList meta_relative = []
@@ -203,7 +199,7 @@ def parseBuildMetaPaths(meta_filename, workspace_path) {
   return meta_relative
 }
 
-def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) {
+def createCoreTargetJob(repo, core, core_target, source_includes, config) {
   String job_folder = "${repo.owner}-${repo.name}"
   folder(job_folder)
 
@@ -211,7 +207,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
 
   String job_name = "${job_folder}/${core.name}/${core_target}"
 
-  String release_channel = isProduction ? "#build_releases" : "#build_notify_test"
+  String release_channel = config.isProduction ? "#build_releases" : "#build_notify_test"
 
   job(job_name) {
     description("Autocreated build job for ${job_name}")
@@ -289,7 +285,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
       // depends on it.
       git {
         remote {
-          if (isProduction) {
+          if (config.isProduction) {
             url("git@github.com:Takasa/replay_common.git")
             credentials("takasa_replay_common")
           } else {
@@ -325,7 +321,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, isProduction) 
       }
     }
     triggers {
-      if (isProduction)
+      if (config.isProduction)
         gitHubPushTrigger()
       else {
         pollSCM {
