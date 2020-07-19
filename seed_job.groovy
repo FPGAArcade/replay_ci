@@ -266,7 +266,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                                         };type=application/json" \
                               --form "zipfile=@\\"\${RELEASE_ZIP}\\";type=application/zip" \
                               \${RELEASE_API_URL}builds/`
-                  if [ $status -lt 200 ] || [ $status -ge 300 ]; then
+                  if [ "\${status}" -lt 200 ] || [ "\${status}" -ge 300 ]; then
                     echo >&2 "API upload failed. Aborting."
                     exit 1
                   fi
