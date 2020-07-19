@@ -226,7 +226,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
           wrappers {
             credentialsBinding {
               string('slackwebhookurl', 'slackwebhookurl')
-              string('release-api-key', 'release-api-key')
+              string('releaseapikey', 'release-api-key')
             }
           }
           actions {
@@ -253,18 +253,23 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                   ln -sf "\${RELEASE_DIR}/\${RELEASE_ZIP_NAME}" "\${RELEASE_DIR}/latest"
 
                   echo "Promoting build \${PROMOTED_NUMBER} to stable release: \${RELEASE_ZIP}"
+                  echo "\${PROMOTED_TIMESTAMP}"
+
                   # Upload to release api
-                  curl --request POST \
-                       --header "Authorization: APIKey \${release-api-key}" \
-                       --form 'buildinfo={
-                                  "platformId": "${core_target}",
-                                  "coreId": "${core.name}",
-                                  "buildType": "stable",
-                                  "buildDate": "\${PROMOTED_TIMESTAMP}"
-                                };type=application/json' \
-                       --form "zipfile=@\\"\${RELEASE_ZIP}\\";type=application/zip" \
-                       \${RELEASE_API_URL}builds/
-                  test $? -eq 0 ||  { echo >&2 "API upload failed. Aborting."; exit 1; }
+                  status=`curl --silent --output /dev/stderr -w "%{http_code}" --request POST \
+                              --header "Authorization: APIKey \${releaseapikey}" \
+                              --form "buildinfo={
+                                          \\"platformId\\": \\"${core_target}\\",
+                                          \\"coreId\\": \\"${core.name}\\",
+                                          \\"buildType\\": \\"stable\\",
+                                          \\"buildDate\\": \\"{PROMOTED_TIMESTAMP}\\"
+                                        };type=application/json" \
+                              --form "zipfile=@\\"\${RELEASE_ZIP}\\";type=application/zip" \
+                              \${RELEASE_API_URL}builds/`
+                  if test \${status} -ne 200 ; then
+                    echo >&2 "API upload failed. Aborting."
+                    exit 1
+                  fi
 
                   # Notify slack
                   read -d '' SLACK_MESSAGE <<EOF
