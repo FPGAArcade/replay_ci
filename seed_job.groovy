@@ -264,6 +264,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                                 };type=application/json' \
                        --form "zipfile=@\\"\${RELEASE_ZIP}\\";type=application/zip" \
                        \${RELEASE_API_URL}builds/
+                  test $? -eq 0 ||  { echo >&2 "API upload failed. Aborting."; exit 1; }
 
                   # Notify slack
                   read -d '' SLACK_MESSAGE <<EOF
