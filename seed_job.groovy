@@ -262,7 +262,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                                           \\"platformId\\": \\"${core_target}\\",
                                           \\"coreId\\": \\"${core.name}\\",
                                           \\"buildType\\": \\"stable\\",
-                                          \\"buildDate\\": \\"{PROMOTED_TIMESTAMP}\\"
+                                          \\"buildDate\\": \\"${PROMOTED_TIMESTAMP}\\"
                                         };type=application/json" \
                               --form "zipfile=@\\"\${RELEASE_ZIP}\\";type=application/zip" \
                               \${RELEASE_API_URL}builds/`
