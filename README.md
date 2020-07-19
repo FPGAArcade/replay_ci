@@ -40,6 +40,23 @@ json list of repositories to monitor for cores.
   - Simple Theme
   - Slack Notification
 
+## Configuration
+
+### Environment
+
+  - PRODUCTION_SERVER: true/false.
+  - RELEASE_DIR: Path to copy promoted build zips (deprecated)
+  - RELEASE_API_URL: Base URL for api service (incl. trailing slash).
+
+### Credentials
+
+  - Suitable credentials for each private repo listed in repos.json
+  - "slackwebhookurl": URL curl posts stable release notifications to for slack
+  - "slack-jenkins-ci-token": Token required by slack plugin to post build
+    success notifications.
+  - "release-api-key": Authorisation key for uploading to release api
+
+
 ## Testing
 
 Please treat the testing branch as though it does not exist. It's really a local
