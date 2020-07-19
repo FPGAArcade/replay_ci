@@ -238,6 +238,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
               includePatterns("*.zip")
               targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
             }
+            // TODO: Move to separate script with args or env vars
             // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
             shell("""\
                   #!/bin/bash
@@ -245,7 +246,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
 
                   RELEASE_ZIP=`ls "\${JENKINS_HOME}/jobs/${job_folder}/jobs/${core.name}/jobs/${core_target}/builds/\${PROMOTED_NUMBER}/archive/${core.name}_${core_target}_"*.zip`
                   RELEASE_ZIP_NAME=`basename \${RELEASE_ZIP}`
-                  RELEASE_DATE=`date -uIseconds`
 
                   # DEPRECATED: Will be removed once Jenkins migrated to docker and new api upload considered stable.
                   # Update "latest" sym link
@@ -260,7 +260,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                                   "platformId": "${core_target}",
                                   "coreId": "${core.name}",
                                   "buildType": "stable",
-                                  "buildDate": "\${RELEASE_DATE}"
+                                  "buildDate": "\${PROMOTED_TIMESTAMP}"
                                 };type=application/json' \
                        --form "zipfile=@\\"\${RELEASE_ZIP}\\";type=application/zip" \
                        \${RELEASE_API_URL}builds/
