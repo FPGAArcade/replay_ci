@@ -227,6 +227,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             credentialsBinding {
               string('slackwebhookurl', 'slackwebhookurl')
               string('releaseapikey', 'release-api-key')
+              string('discordbuildwebhookurl', 'discord-build-notification-webhookurl')
             }
           }
           actions {
@@ -424,6 +425,23 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
         notifyUnstable(true)
         commitInfoChoice('NONE')
         includeCustomMessage(false)
+      }
+    }
+
+    configure { project ->
+      project / publishers << 'nz.co.jammehcow.jenkinsdiscord.WebhookPublisher' {
+        webhookURL '${discordbuildwebhookurl}'
+        branchName 'on some branch'
+        statusTitle 'some title here'
+        notes 'some notes here'
+        // thumbnailURL 'https://example.com/thumbnail.jpg'
+        sendOnStateChange false
+        enableUrlLinking true
+        enableArtifactList true
+        enableFooterInfo true
+        showChangeset true
+        sendLogFile false
+        sendStartNotification false
       }
     }
   }
