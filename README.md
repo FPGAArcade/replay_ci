@@ -29,6 +29,7 @@ json list of repositories to monitor for cores.
   - Authorize Project
   - Copy Artifacts
   - Credentials Binding
+  - Discord Notifier
   - disk-usage
   - GitHub
   - Green Balls
@@ -50,11 +51,16 @@ json list of repositories to monitor for cores.
 
 ### Credentials
 
+Required:
   - Suitable credentials for each private repo listed in repos.json
+  - "release-api-key": Authorisation key for uploading to release api
+
+Optional:
   - "slackwebhookurl": URL curl posts stable release notifications to for slack
   - "slack-jenkins-ci-token": Token required by slack plugin to post build
     success notifications.
-  - "release-api-key": Authorisation key for uploading to release api
+  - "discord-build-notification-webhookurl": Webhook URL for posting build notifications.
+  - "discord-release-notification-webhook": Webhook URL for posting stable/promoted release notifications.
 
 
 ## Testing
