@@ -463,14 +463,14 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
       project / publishers << 'nz.co.jammehcow.jenkinsdiscord.WebhookPublisher' {
         webhookURL '${discordbuildwebhookurl}'
         //branchName '${GIT_BRANCH}'
-        //statusTitle 'some title here'
+        statusTitle "${job_name} #\${BUILD_NUMBER}"
         //notes 'some notes here'
         //thumbnailURL 'https://example.com/thumbnail.jpg'
         sendOnStateChange false
         enableUrlLinking true
         enableArtifactList true
         enableFooterInfo false
-        showChangeset true
+        showChangeset false
         sendLogFile false
         sendStartNotification false
       }
