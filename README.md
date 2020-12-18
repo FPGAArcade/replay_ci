@@ -59,7 +59,8 @@ Optional:
   - "slackwebhookurl": URL curl posts stable release notifications to for slack
   - "slack-jenkins-ci-token": Token required by slack plugin to post build
     success notifications.
-  - "discord-build-notification-webhookurl": Webhook URL for posting build notifications
+  - "discord-build-notification-webhookurl": Webhook URL for posting build notifications.
+  - "discord-release-notification-webhook": Webhook URL for posting stable/promoted release notifications.
 
 
 ## Testing

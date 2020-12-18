@@ -227,6 +227,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             credentialsBinding {
               string('slackwebhookurl', 'slackwebhookurl')
               string('releaseapikey', 'release-api-key')
+              string('discordreleasewebhook', 'discord-release-notification-webhook')
             }
           }
           actions {
@@ -240,6 +241,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             }
             // TODO: Move to separate script with args or env vars
             // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
+            // TODO: Move release notification handling into release API as event based on new build post.
             shell("""\
                   #!/bin/bash
                   hash curl 2>/dev/null || { echo >&2 "curl (curl) required but not found.  Aborting."; exit 1; }
@@ -282,6 +284,32 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                   EOF
 
                   curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
+
+                  # Notify discord
+                  read -d '' DISCORD_MESSAGE <<EOF
+                  {
+                    "content": "A new core stable release is available.",
+                    "embeds": [
+                      {
+                        "title": "${core.name} (${core_target})",
+                        "url": "https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP_NAME}|\${RELEASE_ZIP_NAME}",
+                        "color": null,
+                        "fields": [
+                          {
+                            "name": "Download",
+                            "value": "[\${RELEASE_ZIP_NAME}](https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP_NAME})"
+                          },
+                          {
+                            "name": "Previous Releases",
+                            "value": "https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                  EOF
+
+                  curl -X POST --header "Content-Type: application/json" --data "\${DISCORD_MESSAGE}" \${discordreleasewebhook}
 
                   exit \$?
                   """.stripIndent())
