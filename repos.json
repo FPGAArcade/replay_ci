@@ -44,6 +44,13 @@
     "testingOnly": true
   },
   {
+    "owner": "Sector14",
+    "name": "replay_console",
+    "url": "git@github.com:Sector14/replay_console.git",
+    "credentialId": "sector14_replay_console",
+    "testingOnly": true
+  },
+  {
      "owner": "Sector14",
      "name": "acorn_electron",
      "url": "https://github.com/Sector14/acorn-electron-core.git",
