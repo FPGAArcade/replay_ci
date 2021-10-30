@@ -385,7 +385,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
               excludedRegions('')
             }
           }
-          branch('master')
+          branch('main')
         }
       }
 

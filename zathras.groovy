@@ -139,7 +139,7 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
               excludedRegions('')
             }
           }
-          branch('master')
+          branch('main')
         }
       }
 
