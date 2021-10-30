@@ -111,6 +111,32 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
         branch('master')
       }
 
+      // HACK: The "psx" core in replay_console requires a 3rd repo.
+      // This is not yet supported thus this hack to hard code an extra
+      // repo until the seed job is upgraded to read a jenkins configuration file
+      // from the core dir and allow arbitrary extra repos.
+      if (repo.name == "replay_console") {
+        git {
+          remote {
+            if (config.isProduction) {
+              url("git@github.com:Takasa/ps-fpga")
+              credentials("takasa_ps-fpga")
+            } else {
+              url("git@github.com:Sector14/ps-fpga")
+              credentials("sector14_ps-fpga")
+            }
+          }
+          extensions {
+            relativeTargetDirectory('ps-fpga')
+            pathRestriction {
+              includedRegions(source_includes['ps-fpga'].join('\n'))
+              excludedRegions('')
+            }
+          }
+          branch('master')
+        }
+      }
+
       if (repo.name != "replay_common") {
         git {
           remote {
