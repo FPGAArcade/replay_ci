@@ -118,7 +118,7 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
       if (repo.name == "replay_console") {
         git {
           remote {
-            if (config.isProduction) {
+            if (isProduction) {
               url("git@github.com:Takasa/ps-fpga")
               credentials("takasa_ps-fpga")
             } else {
