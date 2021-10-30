@@ -187,7 +187,7 @@ def generateBuildMeta(repo, core, core_target, config) {
   ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
 
   MODELSIM_PATH = ''
-  QUARTUS_PATH = '/opt/intelFPGA_lite/18.1/quartus/bin/'
+  QUARTUS_PATH = '/opt/intelFPGA_lite/20.1/quartus/bin/'
 
   # if UNISIM_PATH is empty, a local (tb/sim) library will be created
   UNISIM_PATH = None
@@ -442,7 +442,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
 
             MODELSIM_PATH = ''
-            QUARTUS_PATH = '/opt/intelFPGA_lite/18.1/quartus/bin/'
+            QUARTUS_PATH = '/opt/intelFPGA_lite/20.1/quartus/bin/'
 
             # if UNISIM_PATH is empty, a local (tb/sim) library will be created
             UNISIM_PATH = None
