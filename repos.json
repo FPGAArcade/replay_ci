@@ -41,6 +41,14 @@
     "name": "replay_arcade",
     "url": "git@github.com:Sector14/replay_arcade.git",
     "credentialId": "sector14_replay_arcade",
+    "testingOnly": true,
+    "disabled": true
+  },
+  {
+    "owner": "Sector14",
+    "name": "replay_console",
+    "url": "git@github.com:Sector14/replay_console.git",
+    "credentialId": "sector14_replay_console",
     "testingOnly": true
   },
   {

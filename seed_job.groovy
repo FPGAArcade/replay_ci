@@ -148,7 +148,7 @@ def parseCoresFile(coresFile) {
     def path = matcher.group('path')
     def name = coreNameFromPath(path)
     if (! name) {
-      error "Unable to determine core name for path: ${path}"
+      throw new Exception("Unable to determine core name for path: ${path}")
       return
     }
 
@@ -159,7 +159,7 @@ def parseCoresFile(coresFile) {
 
     // Fail job if duplicate core names detected
     if (unique_names.contains(name)) {
-      error "Duplicate core name '${name}'. Aborting."
+      throw new Exception("Duplicate core name '${name}'. Aborting.")
     }
     unique_names.add(name)
 
@@ -177,14 +177,36 @@ def coreNameFromPath(path) {
 }
 
 def generateBuildMeta(repo, core, core_target, config) {
+  // TODO: Remove duplication of paths and need to hard code in the seed job
+  //       both here and in the created job shell script.
+  File local_settings = new File("${config.workspacePath}/replay_common/scripts/local_settings.py")
+
+  local_settings.write("""\
+  # Local paths auto generated via jenkins project build script
+  ISE_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/'
+  ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
+
+  MODELSIM_PATH = ''
+  QUARTUS_PATH = '/opt/intelFPGA_lite/20.1/quartus/bin/'
+
+  # if UNISIM_PATH is empty, a local (tb/sim) library will be created
+  UNISIM_PATH = None
+  """.stripIndent())
+
   def working_dir = new File("${config.workspacePath}/${repo.name}/${core.path}")
 
   def p = "python rmake.py infer --target ${core_target} --prep".execute([], working_dir)
-  p.consumeProcessOutput()
-  p.waitFor()
 
-  // TODO: Switch to timeout?
-  // TODO: Check return code
+  // TODO: timeout
+  def sbStd = new StringBuffer()
+  def sbErr = new StringBuffer()
+  p.waitForProcessOutput(sbStd, sbErr)
+
+  if (p.exitValue() != 0) {
+    out.println(sbStd)
+    out.println(sbErr)
+    throw new Exception("Error generating build meta for core '${core.name}' target '${core_target}'.")
+  }
 }
 
 // return ArrayList of paths relative to work space directory.
@@ -341,6 +363,32 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
         branch('master')
       }
 
+      // HACK: The "psx" core in replay_console requires a 3rd repo.
+      // This is not yet supported thus this hack to hard code an extra
+      // repo until the seed job is upgraded to read a jenkins configuration file
+      // from the core dir and allow arbitrary extra repos.
+      if (repo.name == "replay_console" && core.name == "psx") {
+        git {
+          remote {
+            if (config.isProduction) {
+              url("git@github.com:Takasa/ps-fpga")
+              credentials("takasa_ps-fpga")
+            } else {
+              url("git@github.com:Sector14/ps-fpga")
+              credentials("sector14_ps-fpga")
+            }
+          }
+          extensions {
+            relativeTargetDirectory('ps-fpga')
+            pathRestriction {
+              includedRegions(source_includes['ps-fpga'].join('\n'))
+              excludedRegions('')
+            }
+          }
+          branch('main')
+        }
+      }
+
       if (repo.name != "replay_common") {
         git {
           remote {
@@ -394,7 +442,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
 
             MODELSIM_PATH = ''
-            QUARTUS_PATH = '/opt/intelFPGA_lite/18.1/quartus/bin/'
+            QUARTUS_PATH = '/opt/intelFPGA_lite/20.1/quartus/bin/'
 
             # if UNISIM_PATH is empty, a local (tb/sim) library will be created
             UNISIM_PATH = None
