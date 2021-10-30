@@ -75,6 +75,12 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
                                     .*/_deps.txt
                                     .*/_srcs.txt
                                   """.stripIndent()
+  // TODO: Hack for the psx repo
+  String generic_repo_includes = """\
+                                    .*/_deps.txt
+                                    .*/_srcs.txt
+                                  """.stripIndent()
+
 
   job(jobName) {
     description("Seed job for ${repo.url}.")
@@ -129,7 +135,7 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
           extensions {
             relativeTargetDirectory('ps-fpga')
             pathRestriction {
-              includedRegions(source_includes['ps-fpga'].join('\n'))
+              includedRegions(generic_repo_includes)
               excludedRegions('')
             }
           }
