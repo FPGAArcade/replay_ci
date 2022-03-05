@@ -39,9 +39,8 @@ json list of repositories to monitor for cores.
   - Multiple SCMs
   - Pipeline: Nodes and Processes
   - Promoted Builds
-  - pyenv
   - Simple Theme
-  - Slack Notification
+  - Embeddable Build Status
 
 ## Configuration
 
