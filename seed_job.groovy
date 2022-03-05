@@ -232,8 +232,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
 
   String job_name = "${job_folder}/${core.name}/${core_target}"
 
-  String release_channel = config.isProduction ? "#build_releases" : "#build_notify_test"
-
   job(job_name) {
     description("Autocreated build job for ${job_name}")
     properties {
@@ -297,15 +295,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                     echo >&2 "API upload failed. Aborting."
                     exit 1
                   fi
-
-                  # Notify slack
-                  read -d '' SLACK_MESSAGE <<EOF
-                  New stable release of ${core.name} for the ${core_target}.
-                  Download: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP_NAME}|\${RELEASE_ZIP_NAME}>
-                  Previous Builds: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/>
-                  EOF
-
-                  curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
 
                   # Notify discord
                   read -d '' DISCORD_MESSAGE <<EOF
