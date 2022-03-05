@@ -21,7 +21,7 @@ configuration.putAll(binding.getVariables())
 
 Boolean isProduction = configuration['PRODUCTION_SERVER'] ? configuration['PRODUCTION_SERVER'].toBoolean() : false
 
-def repoDefaults = ['disabled': false, 'branch': 'master']
+def repoDefaults = ['disabled': false, 'branch': 'master', 'testing': false, 'production': false]
 
 // -----------------------------------------------------------------------------
 // Main

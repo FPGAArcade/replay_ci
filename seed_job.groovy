@@ -195,7 +195,7 @@ def generateBuildMeta(repo, core, core_target, config) {
 
   def working_dir = new File("${config.workspacePath}/${repo.name}/${core.path}")
 
-  def p = "python rmake.py infer --target ${core_target} --prep".execute([], working_dir)
+  def p = "python rmake.py infer --target ${core_target} --seed".execute([], working_dir)
 
   // TODO: timeout
   def sbStd = new StringBuffer()
