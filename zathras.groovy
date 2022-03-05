@@ -48,7 +48,7 @@ def generateSeedJobs(repos, repoDefaults, isProduction) {
     if (repo.disabled)
       out.println("Skipping disabled repo: ${repo.name}")
 
-    if ( (repo.testingOnly && isProduction) || repo.disabled)
+    if ( (isProduction && !repo.live) || (!isProduction && !repo.testing) || repo.disabled)
       return
 
     String job_name = "seed_jobs/${repo.owner}-${repo.name}-seeder"

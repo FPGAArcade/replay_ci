@@ -18,8 +18,10 @@ json list of repositories to monitor for cores.
   - "url": https or ssh github url
   - "branch": (default master) Github branch to generate seed job/core builds from
   - "credentialId" Jenkins credential ID. Only required for private repositories.
-  - "testingOnly": (default false) Set true for repositories that should be created
-                   on the development jenkins server
+  - "production": (default false) Set true for repositories that should be created
+                  on the production jenkins server
+  - "testing": (default false) Set true for repositories that should be created
+               on the development jenkins server
   - "disabled": true/false (default false) Skip creation of seed jobs for this repo.
                 Disabling an existing repo will currently cause all related build
                 jobs to be removed.

@@ -3,45 +3,57 @@
     "owner": "Takasa",
     "name": "replay_common",
     "url": "git@github.com:Takasa/replay_common.git",
-    "credentialId": "takasa_replay_common"
+    "credentialId": "takasa_replay_common",
+    "production": true
   },
   {
     "owner": "Takasa",
     "name": "replay_console",
     "url": "git@github.com:Takasa/replay_console.git",
-    "credentialId": "takasa_replay_console"
+    "credentialId": "takasa_replay_console",
+    "production": true
   },
   {
     "owner": "Takasa",
     "name": "replay_arcade",
     "url": "git@github.com:Takasa/replay_arcade.git",
-    "credentialId": "takasa_replay_arcade"
+    "credentialId": "takasa_replay_arcade",
+    "production": true
   },
   {
     "owner": "Takasa",
     "name": "replay_amiga",
     "url": "git@github.com:Takasa/replay_amiga.git",
-    "credentialId": "takasa_replay_amiga"
+    "credentialId": "takasa_replay_amiga",
+    "production": true
   },
   {
     "owner": "Takasa",
     "name": "replay_computer",
     "url": "git@github.com:Takasa/replay_computer.git",
-    "credentialId": "takasa_replay_computer"
+    "credentialId": "takasa_replay_computer",
+    "production": true
+  },
+  {
+    "owner": "Sector14",
+    "name": "acorn_electron",
+    "url": "https://github.com/Sector14/acorn-electron-core.git",
+    "branch": "develop",
+    "production": true
   },
   {
     "owner": "Sector14",
     "name": "replay_common",
     "url": "git@github.com:Sector14/replay_common.git",
     "credentialId": "sector14_replay_common",
-    "testingOnly": true
+    "testing": true
   },
   {
     "owner": "Sector14",
     "name": "replay_arcade",
     "url": "git@github.com:Sector14/replay_arcade.git",
     "credentialId": "sector14_replay_arcade",
-    "testingOnly": true,
+    "testing": true,
     "disabled": true
   },
   {
@@ -49,13 +61,7 @@
     "name": "replay_console",
     "url": "git@github.com:Sector14/replay_console.git",
     "credentialId": "sector14_replay_console",
-    "testingOnly": true
-  },
-  {
-     "owner": "Sector14",
-     "name": "acorn_electron",
-     "url": "https://github.com/Sector14/acorn-electron-core.git",
-     "branch": "develop",
-     "disabled": false
+    "testing": true,
+    "disabled": true
   }
 ]
