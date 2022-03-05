@@ -245,7 +245,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
           }
           wrappers {
             credentialsBinding {
-              string('slackwebhookurl', 'slackwebhookurl')
               string('releaseapikey', 'release-api-key')
               string('discordreleasewebhook', 'discord-release-notification-webhook')
             }
@@ -260,7 +259,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
               targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
             }
             // TODO: Move to separate script with args or env vars
-            // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
             // TODO: Move release notification handling into release API as event based on new build post.
             shell("""\
                   #!/bin/bash
@@ -475,20 +473,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
       }
       fingerprint {
         targets("*.zip,${repo.name}/${core.path}/sdcard/**")
-      }
-      slackNotifier {
-        startNotification(false)
-        notifyAborted(false)
-        notifyBackToNormal(true)
-        notifyEveryFailure(true)
-        notifyFailure(true)
-        notifyNotBuilt(true)
-        notifyRegression(true)
-        notifyRepeatedFailure(true)
-        notifySuccess(true)
-        notifyUnstable(true)
-        commitInfoChoice('NONE')
-        includeCustomMessage(false)
       }
     }
     wrappers {
