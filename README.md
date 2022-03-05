@@ -18,8 +18,10 @@ json list of repositories to monitor for cores.
   - "url": https or ssh github url
   - "branch": (default master) Github branch to generate seed job/core builds from
   - "credentialId" Jenkins credential ID. Only required for private repositories.
-  - "testingOnly": (default false) Set true for repositories that should be created
-                   on the development jenkins server
+  - "production": (default false) Set true for repositories that should be created
+                  on the production jenkins server
+  - "testing": (default false) Set true for repositories that should be created
+               on the development jenkins server
   - "disabled": true/false (default false) Skip creation of seed jobs for this repo.
                 Disabling an existing repo will currently cause all related build
                 jobs to be removed.
@@ -37,9 +39,8 @@ json list of repositories to monitor for cores.
   - Multiple SCMs
   - Pipeline: Nodes and Processes
   - Promoted Builds
-  - pyenv
   - Simple Theme
-  - Slack Notification
+  - Embeddable Build Status
 
 ## Configuration
 
@@ -56,9 +57,6 @@ Required:
   - "release-api-key": Authorisation key for uploading to release api
 
 Optional:
-  - "slackwebhookurl": URL curl posts stable release notifications to for slack
-  - "slack-jenkins-ci-token": Token required by slack plugin to post build
-    success notifications.
   - "discord-build-notification-webhookurl": Webhook URL for posting build notifications.
   - "discord-release-notification-webhook": Webhook URL for posting stable/promoted release notifications.
 

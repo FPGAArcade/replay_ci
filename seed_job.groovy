@@ -195,7 +195,7 @@ def generateBuildMeta(repo, core, core_target, config) {
 
   def working_dir = new File("${config.workspacePath}/${repo.name}/${core.path}")
 
-  def p = "python rmake.py infer --target ${core_target} --prep".execute([], working_dir)
+  def p = "python rmake.py infer --target ${core_target} --seed".execute([], working_dir)
 
   // TODO: timeout
   def sbStd = new StringBuffer()
@@ -232,8 +232,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
 
   String job_name = "${job_folder}/${core.name}/${core_target}"
 
-  String release_channel = config.isProduction ? "#build_releases" : "#build_notify_test"
-
   job(job_name) {
     description("Autocreated build job for ${job_name}")
     properties {
@@ -247,7 +245,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
           }
           wrappers {
             credentialsBinding {
-              string('slackwebhookurl', 'slackwebhookurl')
               string('releaseapikey', 'release-api-key')
               string('discordreleasewebhook', 'discord-release-notification-webhook')
             }
@@ -262,7 +259,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
               targetDirectory("/home/jenkins/www/releases/cores/${core_target}/${core.name}/")
             }
             // TODO: Move to separate script with args or env vars
-            // HACK: Using curl based slack messaging as slackNotifier is not available in stepContext.
             // TODO: Move release notification handling into release API as event based on new build post.
             shell("""\
                   #!/bin/bash
@@ -297,15 +293,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                     echo >&2 "API upload failed. Aborting."
                     exit 1
                   fi
-
-                  # Notify slack
-                  read -d '' SLACK_MESSAGE <<EOF
-                  New stable release of ${core.name} for the ${core_target}.
-                  Download: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/\${RELEASE_ZIP_NAME}|\${RELEASE_ZIP_NAME}>
-                  Previous Builds: <https://build.fpgaarcade.com/releases/cores/${core_target}/${core.name}/>
-                  EOF
-
-                  curl -X POST --data "payload={\\"text\\": \\"\${SLACK_MESSAGE}\\", \\"channel\\": \\"${release_channel}\\", \\"username\\": \\"jenkins\\", \\"icon_emoji\\": \\":ghost:\\"}" \${slackwebhookurl}
 
                   # Notify discord
                   read -d '' DISCORD_MESSAGE <<EOF
@@ -486,20 +473,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
       }
       fingerprint {
         targets("*.zip,${repo.name}/${core.path}/sdcard/**")
-      }
-      slackNotifier {
-        startNotification(false)
-        notifyAborted(false)
-        notifyBackToNormal(true)
-        notifyEveryFailure(true)
-        notifyFailure(true)
-        notifyNotBuilt(true)
-        notifyRegression(true)
-        notifyRepeatedFailure(true)
-        notifySuccess(true)
-        notifyUnstable(true)
-        commitInfoChoice('NONE')
-        includeCustomMessage(false)
       }
     }
     wrappers {
