@@ -33,14 +33,16 @@ json list of repositories to monitor for cores.
   - Credentials Binding
   - Discord Notifier
   - disk-usage
+  - Embeddable Build Status
   - GitHub
   - Green Balls
   - Job DSL
   - Multiple SCMs
   - Pipeline: Nodes and Processes
+  - Pipeline Job
   - Promoted Builds
   - Simple Theme
-  - Embeddable Build Status
+
 
 ## Configuration
 
