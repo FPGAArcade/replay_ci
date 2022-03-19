@@ -38,7 +38,7 @@ generateSeedJobs(repoList, repoDefaults, isProduction)
 // -----------------------------------------------------------------------------
 
 def generateSeedJobs(repos, repoDefaults, isProduction) {
-  folder('seed_jobs')
+  folder('seed_jobs_pipeline')
 
   String seed_script = readFileFromWorkspace('seed_job.groovy')
 
@@ -51,7 +51,7 @@ def generateSeedJobs(repos, repoDefaults, isProduction) {
     if ( (isProduction && !repo.production) || (!isProduction && !repo.testing) || repo.disabled)
       return
 
-    String job_name = "seed_jobs/${repo.owner}-${repo.name}-seeder"
+    String job_name = "seed_jobs_pipeline/${repo.owner}-${repo.name}-seeder"
 
     createSeedJob(job_name, repo, seed_script, isProduction)
 
@@ -82,8 +82,11 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
                                   """.stripIndent()
 
 
-  job(jobName) {
+  pipelineJob(jobName) {
     description("Seed job for ${repo.url}.")
+
+    // TODO: authorization {}
+
     parameters {
       // REVIEW: Don't really want these as ui editable params, better option?
       stringParam('param_repo_owner', repo.owner, 'Do NOT modify')
@@ -95,71 +98,82 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
       stringParam('param_repo_url', repo.url, 'Do Not modify')
       stringParam('param_repo_branch', repo.branch, 'Do Not modify')
     }
-    multiscm {
-      // replay_common is required by all cores for build dependancy generation
-      git {
-        remote {
-          if (isProduction) {
-            url("git@github.com:Takasa/replay_common.git")
-            credentials("takasa_replay_common")
-          } else {
-            url("git@github.com:Sector14/replay_common.git")
-            credentials("sector14_replay_common")
-          }
-        }
-        extensions {
-          relativeTargetDirectory('replay_common')
-          pathRestriction {
-            includedRegions(replay_common_includes)
-            excludedRegions('')
-          }
-        }
-        branch('master')
-      }
 
-      // HACK: The "psx" core in replay_console requires a 3rd repo.
-      // This is not yet supported thus this hack to hard code an extra
-      // repo until the seed job is upgraded to read a jenkins configuration file
-      // from the core dir and allow arbitrary extra repos.
-      if (repo.name == "replay_console") {
-        git {
-          remote {
-            if (isProduction) {
-              url("git@github.com:Takasa/ps-fpga")
-              credentials("takasa_ps-fpga")
-            } else {
-              url("git@github.com:Sector14/ps-fpga")
-              credentials("sector14_ps-fpga")
-            }
-          }
-          extensions {
-            relativeTargetDirectory('ps-fpga')
-            pathRestriction {
-              includedRegions(generic_repo_includes)
-              excludedRegions('')
-            }
-          }
-          branch('main')
-        }
-      }
-
-      if (repo.name != "replay_common") {
-        git {
-          remote {
-            url(repo.url)
-            credentials(repo.credentialId)
-          }
-          extensions {
-            relativeTargetDirectory(repo.name)
-            pathRestriction {
-              includedRegions(seed_repo_includes)
-              excludedRegions('')
-            }
-          }
-          branch(repo.branch)
-        }
+    definition {
+      cps {
+        // TODO: use seedScript once migrated to pipeline
+        script('')
+        sandbox()
       }
     }
+
+    // multiscm {
+    //   // replay_common is required by all cores for build dependancy generation
+    //   git {
+    //     remote {
+    //       if (isProduction) {
+    //         url("git@github.com:Takasa/replay_common.git")
+    //         credentials("takasa_replay_common")
+    //       } else {
+    //         url("git@github.com:Sector14/replay_common.git")
+    //         credentials("sector14_replay_common")
+    //       }
+    //     }
+    //     extensions {
+    //       relativeTargetDirectory('replay_common')
+    //       pathRestriction {
+    //         includedRegions(replay_common_includes)
+    //         excludedRegions('')
+    //       }
+    //     }
+    //     branch('master')
+    //   }
+
+    //   // HACK: The "psx" core in replay_console requires a 3rd repo.
+    //   // This is not yet supported thus this hack to hard code an extra
+    //   // repo until the seed job is upgraded to read a jenkins configuration file
+    //   // from the core dir and allow arbitrary extra repos.
+    //   if (repo.name == "replay_console") {
+    //     git {
+    //       remote {
+    //         if (isProduction) {
+    //           url("git@github.com:Takasa/ps-fpga")
+    //           credentials("takasa_ps-fpga")
+    //         } else {
+    //           url("git@github.com:Sector14/ps-fpga")
+    //           credentials("sector14_ps-fpga")
+    //         }
+    //       }
+    //       extensions {
+    //         relativeTargetDirectory('ps-fpga')
+    //         pathRestriction {
+    //           includedRegions(generic_repo_includes)
+    //           excludedRegions('')
+    //         }
+    //       }
+    //       branch('main')
+    //     }
+    //   }
+
+    //   if (repo.name != "replay_common") {
+    //     git {
+    //       remote {
+    //         url(repo.url)
+    //         credentials(repo.credentialId)
+    //       }
+    //       extensions {
+    //         relativeTargetDirectory(repo.name)
+    //         pathRestriction {
+    //           includedRegions(seed_repo_includes)
+    //           excludedRegions('')
+    //         }
+    //       }
+    //       branch(repo.branch)
+    //     }
+    //   }
+    // }
+
+    // TODO: This is deprecated
     triggers {
       if (isProduction)
         gitHubPushTrigger()
@@ -169,14 +183,21 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
         }
       }
     }
-    steps {
-      jobDsl {
-        scriptText(seedScript)
-        removedJobAction('DELETE')
-        removedViewAction('DELETE')
-        removedConfigFilesAction('DELETE')
-      }
-    }
+
+    // orphanedItemStrategy {
+    //   // Trims dead items by the number of days or the number of items.
+    //   discardOldItems {}
+    //   defaultOrphanedItemStrategy {}
+    // }
+
+    // steps {
+    //   jobDsl {
+    //     scriptText(seedScript)
+    //     removedJobAction('DELETE')
+    //     removedViewAction('DELETE')
+    //     removedConfigFilesAction('DELETE')
+    //   }
+    // }
     logRotator {
       numToKeep(20)
     }
