@@ -29,6 +29,7 @@ json list of repositories to monitor for cores.
 ## Required Plugins
 
   - Authorize Project
+  - Build Timestamp Plugin
   - Copy Artifacts
   - Credentials Binding
   - Discord Notifier
@@ -37,9 +38,7 @@ json list of repositories to monitor for cores.
   - GitHub
   - Green Balls
   - Job DSL
-  - Multiple SCMs
-  - Pipeline: Nodes and Processes
-  - Pipeline Job
+  - Pipeline
   - Promoted Builds
   - Simple Theme
 

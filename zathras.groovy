@@ -40,7 +40,7 @@ generateSeedJobs(repoList, repoDefaults, isProduction)
 def generateSeedJobs(repos, repoDefaults, isProduction) {
   folder('seed_jobs_pipeline')
 
-  String seed_script = readFileFromWorkspace('seed_job.groovy')
+  String seed_script = readFileFromWorkspace('seed_job_pipeline.groovy')
 
   repos.each { repo_overrides ->
     def repo = repoDefaults + repo_overrides
@@ -66,26 +66,24 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
   // dependancy changes (_deps.txt and srcs.txt) must trigger a re-gen as a core
   // may gain/lose a dependancy on another core. In that case, the core should
   // rebuild anytime the core it's dependant on changes.
-  String seed_repo_includes = """\
-                                _cores.txt
-                                .*/_deps.txt
-                                .*/_srcs.txt
-                              """.stripIndent()
-  String replay_common_includes = """\
-                                    .*/_deps.txt
-                                    .*/_srcs.txt
-                                  """.stripIndent()
-  // TODO: Hack for the psx repo
-  String generic_repo_includes = """\
-                                    .*/_deps.txt
-                                    .*/_srcs.txt
-                                  """.stripIndent()
+  // String seed_repo_includes = """\
+  //                               _cores.txt
+  //                               .*/_deps.txt
+  //                               .*/_srcs.txt
+  //                             """.stripIndent()
+  // String replay_common_includes = """\
+  //                                   .*/_deps.txt
+  //                                   .*/_srcs.txt
+  //                                 """.stripIndent()
+  // // TODO: Hack for the psx repo
+  // String generic_repo_includes = """\
+  //                                   .*/_deps.txt
+  //                                   .*/_srcs.txt
+  //                                 """.stripIndent()
 
 
   pipelineJob(jobName) {
     description("Seed job for ${repo.url}.")
-
-    // TODO: authorization {}
 
     parameters {
       // REVIEW: Don't really want these as ui editable params, better option?
@@ -101,8 +99,7 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
 
     definition {
       cps {
-        // TODO: use seedScript once migrated to pipeline
-        script('')
+        script(seedScript)
         sandbox()
       }
     }
@@ -173,16 +170,20 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
     //   }
     // }
 
-    // TODO: This is deprecated
-    triggers {
-      if (isProduction)
-        gitHubPushTrigger()
-      else {
-        pollSCM {
-          scmpoll_spec('*/2 * * * *')
+    properties {
+      pipelineTriggers {
+        triggers {
+          if (isProduction)
+            gitHubPushTrigger()
+          else {
+            pollSCM {
+              scmpoll_spec('*/2 * * * *')
+            }
+          }
         }
       }
     }
+
 
     // orphanedItemStrategy {
     //   // Trims dead items by the number of days or the number of items.
@@ -198,6 +199,7 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
     //     removedConfigFilesAction('DELETE')
     //   }
     // }
+
     logRotator {
       numToKeep(20)
     }
