@@ -179,25 +179,6 @@ def coreNameFromPath(path) {
 }
 
 def generateBuildMeta(repo, core, core_target, config) {
-  // TODO: Rewrite to read scripts from existing workspace.
-  // TODO: Utilise steps to avoid unsafe groovy script usage.
-
-  // TODO: Remove duplication of paths and need to hard code in the seed job
-  //       both here and in the created job shell script.
-  File local_settings = new File("${WORKSPACE}/replay_common/scripts/local_settings.py")
-
-  local_settings.write("""\
-  # Local paths auto generated via jenkins project build script
-  ISE_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/'
-  ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
-
-  MODELSIM_PATH = ''
-  QUARTUS_PATH = '/opt/intelFPGA_lite/20.1/quartus/bin/'
-
-  # if UNISIM_PATH is empty, a local (tb/sim) library will be created
-  UNISIM_PATH = None
-  """.stripIndent())
-
   def working_dir = new File("${WORKSPACE}/${repo.name}/${core.path}")
 
   def p = "python rmake.py infer --target ${core_target} --seed".execute([], working_dir)
@@ -222,7 +203,6 @@ def parseBuildMetaPaths(meta_filename, config) {
 
   // Change paths to relative to workspace root (+1 to remove leading slash)
   ArrayList meta_relative = []
-  //meta.eachLine { line ->
   meta.split('\n').each { line ->
     meta_relative.add(line.substring(trim_count))
   }
@@ -231,6 +211,7 @@ def parseBuildMetaPaths(meta_filename, config) {
 }
 
 def createCoreTargetJob(repo, core, core_target, source_includes, config) {
+  println(source_includes)
   String job_folder = "${repo.owner}-${repo.name}"
 
   jobDsl targets: ['replay_ci/jobs/core_target.groovy'].join('\n'),
@@ -272,16 +253,17 @@ pipeline {
         stage('Checkout: common') {
           steps {
             dir('replay_ci') {
-              // TODO: Production vs testing branch checkout
               git branch: config.isProduction ? 'master' : 'testing', url: config.isProduction ? 'https://github.com/FPGAArcade/replay_ci.git' : 'https://github.com/Sector14/replay_ci.git'
             }
             dir('replay_common') {
               // TODO: Include/Exclude paths for monitoring/triggering
-              // TODO: Based on production or not checkout correct replay_common
+              // TODO: Based on production or not checkout correct replay_common, diff credentials required too
               // REVIEW: Would be better to have all the repo differences for testing/production
               //         sorted out higher up as part of config or via env
               checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'sector14_replay_common', url: 'git@github.com:Sector14/replay_common.git']]])
+
             }
+            sh 'cp "replay_ci/scripts/local_settings.py" "replay_common/scripts/local_settings.py"'
           }
         }
         stage("Checkout: core") {
