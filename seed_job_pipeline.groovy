@@ -269,16 +269,12 @@ pipeline {
                 echo "Production: ${PRODUCTION_SERVER}"
             }
         }
-        stage('Checkout: replay_ci') {
+        stage('Checkout: common') {
           steps {
             dir('replay_ci') {
               // TODO: Production vs testing branch checkout
               git branch: config.isProduction ? 'master' : 'testing', url: config.isProduction ? 'https://github.com/FPGAArcade/replay_ci.git' : 'https://github.com/Sector14/replay_ci.git'
             }
-          }
-        }
-        stage('Checkout: replay_common') {
-          steps {
             dir('replay_common') {
               // TODO: Include/Exclude paths for monitoring/triggering
               // TODO: Based on production or not checkout correct replay_common
@@ -316,7 +312,7 @@ pipeline {
             }
           }
         }
-        stage('Seeding Core Jobs') {
+        stage('Seeding Target Jobs') {
           steps {
             createCoreJobs(config, repo)
           }
