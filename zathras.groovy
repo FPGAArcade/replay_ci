@@ -191,15 +191,6 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
     //   defaultOrphanedItemStrategy {}
     // }
 
-    // steps {
-    //   jobDsl {
-    //     scriptText(seedScript)
-    //     removedJobAction('DELETE')
-    //     removedViewAction('DELETE')
-    //     removedConfigFilesAction('DELETE')
-    //   }
-    // }
-
     logRotator {
       numToKeep(20)
     }

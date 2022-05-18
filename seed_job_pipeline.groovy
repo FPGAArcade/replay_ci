@@ -230,26 +230,14 @@ def parseBuildMetaPaths(meta_filename, config) {
 def createCoreTargetJob(repo, core, core_target, source_includes, config) {
   String job_folder = "${repo.owner}-${repo.name}"
 
-  String job_name = "${job_folder}/${core.name}/${core_target}"
-
-
-  // TODO: Implement me
-  // TODO: Move to repo script rather than inline
-  jobDsl scriptText: '''
-    folder(job_folder)
-    folder("${job_folder}/${core_name}")
-
-    job("${job_folder}/${core_name}/${core_target}") {
-      description("Autocreated build job for ${core_name}")
-      steps {
-      shell('echo Hello World!')
-      }
-    }
-    '''.stripIndent(),
-    additionalParameters: [job_folder: job_folder,
-                           core_name: core.name,
-                           core_target: core_target]
-
+  jobDsl targets: ['replay_ci/jobs/core_target.groovy'].join('\n'),
+         additionalParameters: [param_job_folder: job_folder,
+                                param_core_name: core.name,
+                                param_target_name: core_target],
+         failOnSeedCollision: true,
+         removedConfigFilesAction: 'DELETE',
+         removedJobAction: 'DELETE',
+         removedViewAction: 'DELETE'
 }
 
 // -----------------------------------------------------------------------------
@@ -277,6 +265,14 @@ pipeline {
                 echo "param_repo_branch: ${params.param_repo_branch}"
                 echo "Production: ${PRODUCTION_SERVER}"
             }
+        }
+        stage('Checkout: replay_ci') {
+          steps {
+            dir('replay_ci') {
+              // TODO: Production vs testing branch checkout
+              git branch: config.isProduction ? 'master' : 'testing', url: config.isProduction ? 'https://github.com/FPGAArcade/replay_ci.git' : 'https://github.com/Sector14/replay_ci.git'
+            }
+          }
         }
         stage('Checkout: replay_common') {
           steps {
