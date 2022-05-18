@@ -59,6 +59,27 @@ Repo repo = new Repo(owner: params.param_repo_owner, name: params.param_repo_nam
                     credentialId: params.param_repo_credential_id, url: params.param_repo_url,
                     branch: params.param_repo_branch)
 
+// Git path restrictions:
+// Seed job for a repo needs to trigger if _cores.txt changes in order to
+// create/remove jobs to handle new core and/or platform targets. In addition
+// dependancy changes (_deps.txt and srcs.txt) must trigger a re-gen as a core
+// may gain/lose a dependancy on another core. In that case, the core should
+// rebuild anytime the core it's dependant on changes.
+String seed_repo_includes = """\
+                              _cores.txt
+                              .*/_deps.txt
+                              .*/_srcs.txt
+                            """.stripIndent()
+String replay_common_includes = """\
+                                  .*/_deps.txt
+                                  .*/_srcs.txt
+                                """.stripIndent()
+// TODO: Hack for the psx repo
+String generic_repo_includes = """\
+                                  .*/_deps.txt
+                                  .*/_srcs.txt
+                                """.stripIndent()
+
 // -----------------------------------------------------------------------------
 // Methods
 // -----------------------------------------------------------------------------
@@ -256,12 +277,20 @@ pipeline {
               git branch: config.isProduction ? 'master' : 'testing', url: config.isProduction ? 'https://github.com/FPGAArcade/replay_ci.git' : 'https://github.com/Sector14/replay_ci.git'
             }
             dir('replay_common') {
-              // TODO: Include/Exclude paths for monitoring/triggering
               // TODO: Based on production or not checkout correct replay_common, diff credentials required too
               // REVIEW: Would be better to have all the repo differences for testing/production
               //         sorted out higher up as part of config or via env
-              checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'sector14_replay_common', url: 'git@github.com:Sector14/replay_common.git']]])
-
+              checkout([
+                $class: 'GitSCM',
+                branches: [[name: '*/master']],
+                userRemoteConfigs: [[
+                   credentialsId: 'sector14_replay_common',
+                   url          : 'git@github.com:Sector14/replay_common.git'
+                ]],
+                extensions: [
+                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: replay_common_includes]
+                ]
+              ])
             }
             sh 'cp "replay_ci/scripts/local_settings.py" "replay_common/scripts/local_settings.py"'
           }
@@ -272,11 +301,17 @@ pipeline {
           }
           steps {
             dir(repo.name) {
-              // TODO: Include/Exclude paths for monitoring/triggering
-              // TODO: Based on production or not checkout correct replay_common
-              // REVIEW: Would be better to have all the repo differences for testing/production
-              //         sorted out higher up as part of config or via env
-              checkout([$class: 'GitSCM', branches: [[name: "*/${repo.branch}"]], extensions: [], userRemoteConfigs: [[credentialsId: repo.credentialId, url: repo.url]]])
+              checkout([
+                $class: 'GitSCM',
+                branches: [[name: "*/${repo.branch}"]],
+                userRemoteConfigs: [[
+                  credentialsId: repo.credentialId,
+                  url          : repo.url
+                ]],
+                extensions: [
+                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: seed_repo_includes]
+                ],
+              ])
             }
           }
         }
@@ -290,7 +325,14 @@ pipeline {
               // TODO: Remove hardcoded hacky 3rd repo for psx. Needs proper support
               //       to pull in additional repos
               // TODO: Production/Testing support
-              checkout([$class: 'GitSCM', branches: [[name: "*/main"]], extensions: [], userRemoteConfigs: [[credentialsId: "sector14_ps-fpga", url: "git@github.com:Sector14/ps-fpga"]]])
+              checkout([
+                $class: 'GitSCM',
+                branches: [[name: "*/main"]],
+                userRemoteConfigs: [[credentialsId: "sector14_ps-fpga", url: "git@github.com:Sector14/ps-fpga"]],
+                extensions: [
+                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: generic_repo_includes]
+                ]
+              ])
             }
           }
         }
