@@ -232,7 +232,6 @@ def parseBuildMetaPaths(meta_filename, config) {
 }
 
 def createCoreTargetJob(repo, core, core_target, source_includes, config) {
-  println(source_includes)
   String job_folder = "${repo.owner}-${repo.name}"
 
   jobDsl targets: ['replay_ci/jobs/core_target.groovy'].join('\n'),
@@ -278,6 +277,8 @@ pipeline {
             }
             dir('replay_common') {
               // TODO: Based on production or not checkout correct replay_common, diff credentials required too
+              // TODO: replay_common should include seed_job _cores.txt monitoring IFF the repo itself
+              //       is replay_common.
               // REVIEW: Would be better to have all the repo differences for testing/production
               //         sorted out higher up as part of config or via env
               checkout([

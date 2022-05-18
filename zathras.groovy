@@ -152,7 +152,7 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
       pipelineTriggers {
         triggers {
           if (isProduction)
-            gitHubPushTrigger()
+            githubPush()
           else {
             pollSCM {
               scmpoll_spec('*/2 * * * *')
@@ -161,7 +161,6 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
         }
       }
     }
-
 
     // orphanedItemStrategy {
     //   // Trims dead items by the number of days or the number of items.
