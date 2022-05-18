@@ -63,7 +63,6 @@ if (!config.releaseAPIURL)
 // rebuild anytime the core it's dependant on changes.
 
 // TODO: Remove the param_ prefix now jenkins includes via params. object
-// Wrap Params
 Repo repo_seed = new Repo(owner: params.param_repo_owner,
                           name: params.param_repo_name,
                           credentialId: params.param_repo_credential_id,
@@ -82,14 +81,14 @@ Repo repo_replay_ci = new Repo(owner: null,
                                branch: config.isProduction ? 'master' : 'testing',
                                includedRegions: '')
 
-// TODO: replay_common should include seed_job _cores.txt monitoring IFF the repo itself
-//       is replay_common.
 Repo repo_common = new Repo(owner: null,
                             name: 'replay_common',
                             credentialId: config.isProduction ? 'takasa_replay_common' : 'sector14_replay_common',
                             url: config.isProduction ? 'git@github.com:Takasa/replay_common.git' : 'git@github.com:Sector14/replay_common.git',
                             branch: 'master',
-                            includedRegions: """\
+                            includedRegions:
+                                (repo_seed.name == 'replay_common' ? '_cores.txt\n' : '') +
+                                """\
                                   .*/_deps.txt
                                   .*/_srcs.txt
                                 """.stripIndent())
@@ -104,13 +103,6 @@ Repo repo_psfpga = new Repo(owner: null,
                                   .*/_deps.txt
                                   .*/_srcs.txt
                                 """.stripIndent())
-
-
-// String seed_repo_includes = """\
-//                               _cores.txt
-//                               .*/_deps.txt
-//                               .*/_srcs.txt
-//                             """.stripIndent()
 
 // -----------------------------------------------------------------------------
 // Methods
