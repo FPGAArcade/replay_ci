@@ -137,7 +137,9 @@ def parseCoresLines(cores_lines) {
   def unique_names = []
 
   // Extract core and supported targets
-  cores_lines.eachLine {
+  // eachLine not currently supported by CPS
+  //cores_lines.eachLine {
+  cores_lines.split('\n').each {
     def matcher = it =~ /(?<targets>(?:\[\w+\])+)\s+(?<path>\S*)/
 
     if (! matcher.matches()) {
@@ -220,7 +222,8 @@ def parseBuildMetaPaths(meta_filename, config) {
 
   // Change paths to relative to workspace root (+1 to remove leading slash)
   ArrayList meta_relative = []
-  meta.eachLine { line ->
+  //meta.eachLine { line ->
+  meta.split('\n').each { line ->
     meta_relative.add(line.substring(trim_count))
   }
 
