@@ -28,6 +28,7 @@ class Repo {
   String credentialId
   String url
   String branch
+  String includedRegions
 }
 
 class Core {
@@ -53,32 +54,63 @@ if (!config.releasePath)
 if (!config.releaseAPIURL)
   throw new Exception("Required ENV variable RELEASE_API_URL not found.")
 
-// TODO: Remove the param_ prefix now jenkins includes via params. object
-// Wrap Params
-Repo repo = new Repo(owner: params.param_repo_owner, name: params.param_repo_name,
-                    credentialId: params.param_repo_credential_id, url: params.param_repo_url,
-                    branch: params.param_repo_branch)
 
-// Git path restrictions:
+// ** Git path restrictions **
 // Seed job for a repo needs to trigger if _cores.txt changes in order to
 // create/remove jobs to handle new core and/or platform targets. In addition
 // dependancy changes (_deps.txt and srcs.txt) must trigger a re-gen as a core
 // may gain/lose a dependancy on another core. In that case, the core should
 // rebuild anytime the core it's dependant on changes.
-String seed_repo_includes = """\
+
+// TODO: Remove the param_ prefix now jenkins includes via params. object
+// Wrap Params
+Repo repo_seed = new Repo(owner: params.param_repo_owner,
+                          name: params.param_repo_name,
+                          credentialId: params.param_repo_credential_id,
+                          url: params.param_repo_url,
+                          branch: params.param_repo_branch,
+                          includedRegions: """\
                               _cores.txt
                               .*/_deps.txt
                               .*/_srcs.txt
-                            """.stripIndent()
-String replay_common_includes = """\
+                            """.stripIndent())
+
+Repo repo_replay_ci = new Repo(owner: null,
+                               name: 'replay_ci',
+                               credentialId: '',
+                               url: config.isProduction ? 'https://github.com/FPGAArcade/replay_ci.git' : 'https://github.com/Sector14/replay_ci.git',
+                               branch: config.isProduction ? 'master' : 'testing',
+                               includedRegions: '')
+
+// TODO: replay_common should include seed_job _cores.txt monitoring IFF the repo itself
+//       is replay_common.
+Repo repo_common = new Repo(owner: null,
+                            name: 'replay_common',
+                            credentialId: config.isProduction ? 'takasa_replay_common' : 'sector14_replay_common',
+                            url: config.isProduction ? 'git@github.com:Takasa/replay_common.git' : 'git@github.com:Sector14/replay_common.git',
+                            branch: 'master',
+                            includedRegions: """\
                                   .*/_deps.txt
                                   .*/_srcs.txt
-                                """.stripIndent()
-// TODO: Hack for the psx repo
-String generic_repo_includes = """\
+                                """.stripIndent())
+
+// TODO: Remove hardcoded 3rd repo for psx. Needs proper support for extra repos.
+Repo repo_psfpga = new Repo(owner: null,
+                            name: 'ps-fpga',
+                            credentialId: config.isProduction ? 'takasa_ps-fpga' : 'sector14_ps-fpga',
+                            url: config.isProduction ? 'git@github.com:Takasa/ps-fpga' : 'git@github.com:Sector14/ps-fpga',
+                            branch: 'main',
+                            includedRegions: """\
                                   .*/_deps.txt
                                   .*/_srcs.txt
-                                """.stripIndent()
+                                """.stripIndent())
+
+
+// String seed_repo_includes = """\
+//                               _cores.txt
+//                               .*/_deps.txt
+//                               .*/_srcs.txt
+//                             """.stripIndent()
 
 // -----------------------------------------------------------------------------
 // Methods
@@ -268,49 +300,45 @@ pipeline {
                 echo "param_repo_url: ${params.param_repo_url}"
                 echo "param_repo_branch: ${params.param_repo_branch}"
                 echo "Production: ${PRODUCTION_SERVER}"
+                echo "Common: ${repo_common.includedRegions}"
             }
         }
         stage('Checkout: common') {
           steps {
-            dir('replay_ci') {
-              git branch: config.isProduction ? 'master' : 'testing', url: config.isProduction ? 'https://github.com/FPGAArcade/replay_ci.git' : 'https://github.com/Sector14/replay_ci.git'
+            dir(repo_replay_ci.name) {
+              git branch: repo_replay_ci.branch, url: repo_replay_ci.url
             }
-            dir('replay_common') {
-              // TODO: Based on production or not checkout correct replay_common, diff credentials required too
-              // TODO: replay_common should include seed_job _cores.txt monitoring IFF the repo itself
-              //       is replay_common.
-              // REVIEW: Would be better to have all the repo differences for testing/production
-              //         sorted out higher up as part of config or via env
+            dir(repo_common.name) {
               checkout([
                 $class: 'GitSCM',
-                branches: [[name: '*/master']],
+                branches: [[name: "*/${repo_common.branch}"]],
                 userRemoteConfigs: [[
-                   credentialsId: 'sector14_replay_common',
-                   url          : 'git@github.com:Sector14/replay_common.git'
+                   credentialsId: repo_common.credentialId,
+                   url          : repo_common.url
                 ]],
                 extensions: [
-                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: replay_common_includes]
+                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: repo_common.includedRegions]
                 ]
               ])
             }
-            sh 'cp "replay_ci/scripts/local_settings.py" "replay_common/scripts/local_settings.py"'
+            sh "cp \"${repo_replay_ci.name}/scripts/local_settings.py\" \"${repo_common.name}/scripts/local_settings.py\""
           }
         }
         stage("Checkout: core") {
           when {
-            not { equals expected: "replay_common", actual: repo.name }
+            not { equals expected: repo_common.name, actual: repo_seed.name }
           }
           steps {
-            dir(repo.name) {
+            dir(repo_seed.name) {
               checkout([
                 $class: 'GitSCM',
-                branches: [[name: "*/${repo.branch}"]],
+                branches: [[name: "*/${repo_seed.branch}"]],
                 userRemoteConfigs: [[
-                  credentialsId: repo.credentialId,
-                  url          : repo.url
+                  credentialsId: repo_seed.credentialId,
+                  url          : repo_seed.url
                 ]],
                 extensions: [
-                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: seed_repo_includes]
+                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: repo_seed.includedRegions]
                 ],
               ])
             }
@@ -318,20 +346,17 @@ pipeline {
         }
         stage('Checkout: ps-fpga') {
           when {
-            equals expected: "replay_console", actual: repo.name
+            equals expected: "replay_console", actual: repo_seed.name
             // equals expected: "psx", actual: core.name
           }
           steps {
-            dir("ps-fpga") {
-              // TODO: Remove hardcoded hacky 3rd repo for psx. Needs proper support
-              //       to pull in additional repos
-              // TODO: Production/Testing support
+            dir(repo_psfpga.name) {
               checkout([
                 $class: 'GitSCM',
-                branches: [[name: "*/main"]],
-                userRemoteConfigs: [[credentialsId: "sector14_ps-fpga", url: "git@github.com:Sector14/ps-fpga"]],
+                branches: [[name: "*/${repo_psfpga.branch}"]],
+                userRemoteConfigs: [[credentialsId: repo_psfpga.credentialId, url: repo_psfpga.url]],
                 extensions: [
-                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: generic_repo_includes]
+                  [$class: 'PathRestriction', excludedRegions: '', includedRegions: repo_psfpga.includedRegions]
                 ]
               ])
             }
@@ -339,7 +364,7 @@ pipeline {
         }
         stage('Seeding Target Jobs') {
           steps {
-            createCoreJobs(config, repo)
+            createCoreJobs(config, repo_seed)
           }
         }
     }
