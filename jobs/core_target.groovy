@@ -1,10 +1,20 @@
-folder("${param_job_folder}")
+pipeline {
+    agent any
 
-folder("${param_job_folder}/${param_core_name}")
+    stages {
+        stage('Test') {
+            steps {
+                echo("running core_target test step.")
+            }
+        }
+    }
 
-job("${param_job_folder}/${param_core_name}/${param_target_name}") {
-  description("Auto-created build job for ${param_core_name}")
-  steps {
-    shell('echo Hello World!')
-  }
+    post {
+      failure {
+        echo "Run when build was a failure"
+      }
+      success {
+        echo "Run when build was a success"
+      }
+    }
 }

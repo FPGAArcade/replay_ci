@@ -47,9 +47,10 @@ json list of repositories to monitor for cores.
 
 ### Environment
 
-  - PRODUCTION_SERVER: true/false.
+  - PRODUCTION_SERVER: true/false
   - RELEASE_DIR: Path to copy promoted build zips (deprecated)
-  - RELEASE_API_URL: Base URL for api service (incl. trailing slash).
+  - RELEASE_API_URL: Base URL for api service (incl. trailing slash) to upload
+                     promoted build zips to.
 
 ### Credentials
 

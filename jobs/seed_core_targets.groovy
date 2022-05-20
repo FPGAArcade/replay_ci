@@ -258,10 +258,12 @@ def parseBuildMetaPaths(meta_filename, config) {
 def createCoreTargetJob(repo, core, core_target, source_includes, config) {
   String job_folder = "${repo.owner}-${repo.name}"
 
-  jobDsl targets: ['replay_ci/jobs/core_target.groovy'].join('\n'),
-         additionalParameters: [param_job_folder: job_folder,
-                                param_core_name: core.name,
-                                param_target_name: core_target],
+  jobDsl targets: ['replay_ci/jobs/core_target_dsl.groovy'].join('\n'),
+         additionalParameters: [param_repo: repo,
+                                param_core: core,
+                                param_core_target: core_target,
+                                param_source_includes: source_includes,
+                                param_config: config],
          failOnSeedCollision: true,
          removedConfigFilesAction: 'DELETE',
          removedJobAction: 'DELETE',

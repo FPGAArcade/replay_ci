@@ -40,7 +40,7 @@ generateSeedJobs(repoList, repoDefaults, isProduction)
 def generateSeedJobs(repos, repoDefaults, isProduction) {
   folder('seed_jobs_pipeline')
 
-  String seed_script = readFileFromWorkspace('seed_job_pipeline.groovy')
+  String seed_script = readFileFromWorkspace('jobs/seed_core_targets.groovy')
 
   repos.each { repo_overrides ->
     def repo = repoDefaults + repo_overrides
@@ -81,72 +81,6 @@ def createSeedJob(jobName, repo, seedScript, isProduction) {
         sandbox()
       }
     }
-
-    // multiscm {
-    //   // replay_common is required by all cores for build dependancy generation
-    //   git {
-    //     remote {
-    //       if (isProduction) {
-    //         url("git@github.com:Takasa/replay_common.git")
-    //         credentials("takasa_replay_common")
-    //       } else {
-    //         url("git@github.com:Sector14/replay_common.git")
-    //         credentials("sector14_replay_common")
-    //       }
-    //     }
-    //     extensions {
-    //       relativeTargetDirectory('replay_common')
-    //       pathRestriction {
-    //         includedRegions(replay_common_includes)
-    //         excludedRegions('')
-    //       }
-    //     }
-    //     branch('master')
-    //   }
-
-    //   // HACK: The "psx" core in replay_console requires a 3rd repo.
-    //   // This is not yet supported thus this hack to hard code an extra
-    //   // repo until the seed job is upgraded to read a jenkins configuration file
-    //   // from the core dir and allow arbitrary extra repos.
-    //   if (repo.name == "replay_console") {
-    //     git {
-    //       remote {
-    //         if (isProduction) {
-    //           url("git@github.com:Takasa/ps-fpga")
-    //           credentials("takasa_ps-fpga")
-    //         } else {
-    //           url("git@github.com:Sector14/ps-fpga")
-    //           credentials("sector14_ps-fpga")
-    //         }
-    //       }
-    //       extensions {
-    //         relativeTargetDirectory('ps-fpga')
-    //         pathRestriction {
-    //           includedRegions(generic_repo_includes)
-    //           excludedRegions('')
-    //         }
-    //       }
-    //       branch('main')
-    //     }
-    //   }
-
-    //   if (repo.name != "replay_common") {
-    //     git {
-    //       remote {
-    //         url(repo.url)
-    //         credentials(repo.credentialId)
-    //       }
-    //       extensions {
-    //         relativeTargetDirectory(repo.name)
-    //         pathRestriction {
-    //           includedRegions(seed_repo_includes)
-    //           excludedRegions('')
-    //         }
-    //       }
-    //       branch(repo.branch)
-    //     }
-    //   }
-    // }
 
     properties {
       pipelineTriggers {
