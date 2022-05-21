@@ -108,7 +108,7 @@ Repo repo_psfpga = new Repo(owner: null,
 // Methods
 // -----------------------------------------------------------------------------
 
-def createCoreJobs(config, repo) {
+def createCoreJobs(config, repo, repo_replay_ci, repo_common, repo_psfpga) {
 
   println(WORKSPACE)
   println(env.WORKSPACE)
@@ -162,8 +162,10 @@ def createCoreJobs(config, repo) {
         source_includes[repo_path].add(dep_path+"/.*/_srcs.txt")
       }
 
-      String job_name = createCoreTargetJob(repo, core, core_target,
-                                            source_includes, config)
+      String job_name = createCoreTargetJob(
+                                repo, repo_replay_ci, repo_common, repo_psfpga,
+                                core, core_target, source_includes, config
+                              )
 
       // // If new job created rather than updated/removed, trigger build
       // // NOTE: In the case of job update, it shouldn't matter if existing
@@ -255,7 +257,8 @@ def parseBuildMetaPaths(meta_filename, config) {
   return meta_relative
 }
 
-def createCoreTargetJob(repo, core, core_target, source_includes, config) {
+def createCoreTargetJob(repo, repo_replay_ci, repo_common, repo_psfpga,
+                        core, core_target, source_includes, config) {
   String job_folder = "${repo.owner}-${repo.name}"
 
   jobDsl targets: ['replay_ci/jobs/core_target_dsl.groovy'].join('\n'),
@@ -263,7 +266,10 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
                                 param_core: core,
                                 param_core_target: core_target,
                                 param_source_includes: source_includes,
-                                param_config: config],
+                                param_config: config,
+                                param_repo_replay_ci: repo_replay_ci,
+                                param_repo_replay_common: repo_common,
+                                param_repo_psfpga: repo_psfpga],
          failOnSeedCollision: true,
          removedConfigFilesAction: 'DELETE',
          removedJobAction: 'DELETE',
@@ -358,7 +364,7 @@ pipeline {
         }
         stage('Seeding Target Jobs') {
           steps {
-            createCoreJobs(config, repo_seed)
+            createCoreJobs(config, repo_seed, repo_replay_ci, repo_common, repo_psfpga)
           }
         }
     }

@@ -35,10 +35,12 @@ json list of repositories to monitor for cores.
   - Discord Notifier
   - disk-usage
   - Embeddable Build Status
+  - Environement Injector
   - GitHub
   - Green Balls
   - Job DSL
   - Pipeline
+  - Pipeline Utility Steps
   - Promoted Builds
   - Simple Theme
 
