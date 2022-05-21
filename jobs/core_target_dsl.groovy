@@ -14,6 +14,13 @@ pipelineJob("${job_folder}/${param_core.name}/${param_core_target}") {
   description("Auto-created build job for ${param_core.name} [${param_core_target}]")
 
   environmentVariables {
+    // REVIEW: is this already available?
+    env('job_folder', job_folder)
+
+    env('core_name', param_core.name)
+    env('core_path', param_core.path)
+    env('core_target', param_core_target)
+
     env('repo_owner', param_repo.owner)
     env('repo_name', param_repo.name)
     env('repo_credential_id', param_repo.credentialId)
@@ -70,10 +77,6 @@ pipelineJob("${job_folder}/${param_core.name}/${param_core_target}") {
   }
 }
 
-  // pipelineJob(job_name) {
-  //   description("Autocreated build job for ${job_name}")
-    // properties {
-    //   githubProjectUrl("https://github.com/${repo.owner}/${repo.name}/")
     //   promotions {
     //     promotion {
     //       name("Stable Release")
@@ -164,155 +167,7 @@ pipelineJob("${job_folder}/${param_core.name}/${param_core_target}") {
     //     }
     //   }
     // }
-    // multiscm {
-    //   // Jenkins is not able to determine other core build deps currently
-    //   // We assume only replay_common exists as a dep and that every core
-    //   // depends on it.
-    //   git {
-    //     remote {
-    //       if (config.isProduction) {
-    //         url("git@github.com:Takasa/replay_common.git")
-    //         credentials("takasa_replay_common")
-    //       } else {
-    //         url("git@github.com:Sector14/replay_common.git")
-    //         credentials("sector14_replay_common")
-    //       }
-    //     }
-    //     extensions {
-    //       relativeTargetDirectory('replay_common')
-    //       pathRestriction {
-    //         includedRegions(source_includes['replay_common'].join('\n'))
-    //         excludedRegions('')
-    //       }
-    //     }
-    //     branch('master')
-    //   }
 
-    //   // HACK: The "psx" core in replay_console requires a 3rd repo.
-    //   // This is not yet supported thus this hack to hard code an extra
-    //   // repo until the seed job is upgraded to read a jenkins configuration file
-    //   // from the core dir and allow arbitrary extra repos.
-    //   if (repo.name == "replay_console" && core.name == "psx") {
-    //     git {
-    //       remote {
-    //         if (config.isProduction) {
-    //           url("git@github.com:Takasa/ps-fpga")
-    //           credentials("takasa_ps-fpga")
-    //         } else {
-    //           url("git@github.com:Sector14/ps-fpga")
-    //           credentials("sector14_ps-fpga")
-    //         }
-    //       }
-    //       extensions {
-    //         relativeTargetDirectory('ps-fpga')
-    //         pathRestriction {
-    //           includedRegions(source_includes['ps-fpga'].join('\n'))
-    //           excludedRegions('')
-    //         }
-    //       }
-    //       branch('main')
-    //     }
-    //   }
-
-    //   if (repo.name != "replay_common") {
-    //     git {
-    //       remote {
-    //         url(repo.url)
-    //         credentials(repo.credentialId)
-    //       }
-    //       extensions {
-    //         relativeTargetDirectory(repo.name)
-    //         pathRestriction {
-    //           includedRegions(source_includes[repo.name].join('\n'))
-    //           excludedRegions('')
-    //         }
-    //       }
-    //       branch(repo.branch)
-    //     }
-    //   }
-    // }
-    // triggers {
-    //   if (config.isProduction)
-    //     gitHubPushTrigger()
-    //   else {
-    //     pollSCM {
-    //       scmpoll_spec('*/2 * * * *')
-    //     }
-    //   }
-    // }
-    // steps {
-    //   shell("""\
-    //         #!/bin/bash
-    //         # Crude packaging script for releases
-    //         hash zip 2>/dev/null || { echo >&2 "zip required but not found.  Aborting."; exit 1; }
-    //         hash git 2>/dev/null || { echo >&2 "git required but not found.  Aborting."; exit 1; }
-    //         hash python 2>/dev/null || { echo >&2 "python required but not found.  Aborting."; exit 1; }
-
-    //         python_major_v=\$(python -c"import sys; print(sys.version_info.major)")
-    //         python_minor_v=\$(python -c"import sys; print(sys.version_info.minor)")
-
-    //         if [[ "\${python_major_v}" -lt "3" || ("\${python_major_v}" -eq "3" && "\${python_minor_v}" -lt "6") ]]; then
-    //             echo "Build system requires python 3.6 or greater (\${python_major_v}.\${python_minor_v} installed)"
-    //             exit 1
-    //         fi
-
-    //         ######################################################################
-    //         # Build Settings
-    //         ######################################################################
-
-    //         # Create local settings if this is a replay_common repo
-    //         [ -d "replay_common/scripts/" ] && cat << EOF > replay_common/scripts/local_settings.py
-    //         # Local paths auto generated via jenkins project build script
-    //         ISE_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/'
-    //         ISE_BIN_PATH = '/opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/'
-
-    //         MODELSIM_PATH = ''
-    //         QUARTUS_PATH = '/opt/intelFPGA_lite/20.1/quartus/bin/'
-
-    //         # if UNISIM_PATH is empty, a local (tb/sim) library will be created
-    //         UNISIM_PATH = None
-
-    //         EOF
-
-    //         ######################################################################
-    //         # Build
-    //         ######################################################################
-
-    //         pushd "${repo.name}/${core.path}" || exit \$?
-    //         python rmake.py infer --target "${core_target}" || exit \$?
-    //         popd
-
-    //         ######################################################################
-    //         # Package
-    //         ######################################################################
-
-    //         # Clean up prior build zip artifacts
-    //         rm *.zip
-    //         pushd "${repo.name}/${core.path}/sdcard" || exit \$?
-
-    //         # TODO: Determine API version
-    //         VERSION=`git describe --tags --always --long`
-    //         DATE=`date -u '+%Y%m%d_%H%M'`
-    //         RELEASE_ZIP="${core.name}_${core_target}_\${DATE}_\${VERSION}.zip"
-
-    //         echo "RELEASE_ZIP_NAME: \${RELEASE_ZIP}"
-
-    //         zip -r "\${RELEASE_ZIP}" *
-    //         popd
-    //         mv "${repo.name}/${core.path}/sdcard/\${RELEASE_ZIP}" .
-
-    //         exit \$?
-    //         """.stripIndent())
-    // }
-    // publishers {
-    //   archiveArtifacts {
-    //     pattern("*.zip")
-    //     onlyIfSuccessful()
-    //   }
-    //   fingerprint {
-    //     targets("*.zip,${repo.name}/${core.path}/sdcard/**")
-    //   }
-    // }
     // wrappers {
     //   credentialsBinding {
     //     string('discordbuildwebhookurl', 'discord-build-notification-webhookurl')

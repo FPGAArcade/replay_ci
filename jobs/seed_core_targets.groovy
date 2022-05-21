@@ -259,8 +259,6 @@ def parseBuildMetaPaths(meta_filename, config) {
 
 def createCoreTargetJob(repo, repo_replay_ci, repo_common, repo_psfpga,
                         core, core_target, source_includes, config) {
-  String job_folder = "${repo.owner}-${repo.name}"
-
   jobDsl targets: ['replay_ci/jobs/core_target_dsl.groovy'].join('\n'),
          additionalParameters: [param_repo: repo,
                                 param_core: core,
