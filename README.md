@@ -41,7 +41,6 @@ json list of repositories to monitor for cores.
   - Job DSL
   - Pipeline
   - Pipeline Utility Steps
-  - Promoted Builds
   - Simple Theme
 
 

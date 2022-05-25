@@ -76,7 +76,7 @@ pipeline {
             steps {
               dir("${env.REPO_NAME}/${env.CORE_PATH}") {
                 sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/build_core.sh'"
-                sh script:"'${WORKSPACE}/replay_ci/scripts/build_core.sh' '${env.CORE_TARGET}'"
+                //sh script:"'${WORKSPACE}/replay_ci/scripts/build_core.sh' '${env.CORE_TARGET}'"
               }
             }
           }
@@ -95,8 +95,13 @@ pipeline {
           success {
             archiveArtifacts artifacts: '*.zip', followSymlinks: false
 
+            // REVIEW: This is meant for "small" files only. Several MB+ really
+            //         needs to be using external artifact management/promotion
+            //         perhaps via backend api?
             stash name: "artifacts", includes: "*.zip"
           }
+
+          // TODO: Discord notify on success/failure
         }
       }
 
@@ -107,8 +112,14 @@ pipeline {
         }
         agent any
         steps {
-          // TODO: Unstash and deploy artifacts
-          sh "echo deploying stable release..."
+          unstash "artifacts"
+
+          withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey')]) {
+            sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+            sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+          }
+
+          // TODO: Notify discord of new release
         }
 
       }
