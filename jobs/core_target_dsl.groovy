@@ -70,8 +70,6 @@ pipelineJob("${job_folder}/${param_core.name}/${param_core_target}") {
     }
   }
 
-  // TODO: promotions
-
   logRotator {
     numToKeep(20)
   }
