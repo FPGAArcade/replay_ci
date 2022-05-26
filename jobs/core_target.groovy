@@ -101,11 +101,22 @@ pipeline {
             stash name: "artifacts", includes: "*.zip"
           }
 
-          // TODO: Discord notify on success/failure
+          always {
+            withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
+              discordSend webhookURL: '${discordbuildwebhookurl}',
+                          description: "Pipeline Build Notification",
+                          enableArtifactsList: true,
+                          link: env.BUILD_URL,
+                          result: currentBuild.currentResult,
+                          successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'),
+                          title: "${job_name} #${BUILD_NUMBER}"
+            }
+          }
         }
       }
 
 
+      // TODO: Milestone/lock to cancel any still pending old deploys
       stage('Publish') {
         input {
           message "Publish this build as a stable release?"
