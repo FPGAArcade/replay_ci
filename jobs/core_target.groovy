@@ -76,7 +76,7 @@ pipeline {
             steps {
               dir("${env.REPO_NAME}/${env.CORE_PATH}") {
                 sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/build_core.sh'"
-                //sh script:"'${WORKSPACE}/replay_ci/scripts/build_core.sh' '${env.CORE_TARGET}'"
+                sh script:"'${WORKSPACE}/replay_ci/scripts/build_core.sh' '${env.CORE_TARGET}'"
               }
             }
           }
@@ -101,9 +101,13 @@ pipeline {
             stash name: "artifacts", includes: "*.zip"
           }
 
-          always {
+
+          cleanup {
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
-              discordSend webhookURL: '${discordbuildwebhookurl}',
+              // REVIEW: This results in an insecure credential usage warning however
+              //         the send step does not appear to suppor env expansion
+              //         precluding '' usage.
+              discordSend webhookURL: "${discordbuildwebhookurl}",
                           description: "Pipeline Build Notification",
                           enableArtifactsList: true,
                           link: env.BUILD_URL,
@@ -125,12 +129,11 @@ pipeline {
         steps {
           unstash "artifacts"
 
-          withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey')]) {
+          withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
+                           string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
             sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
             sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
           }
-
-          // TODO: Notify discord of new release
         }
 
       }

@@ -31,3 +31,29 @@ if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
   echo >&2 "API upload failed. Aborting."
   exit 1
 fi
+
+# Notify discord
+read -d '' DISCORD_MESSAGE <<EOF
+{
+  "content": "A new core stable release is available.",
+  "embeds": [
+    {
+      "title": "${core_name} (${core_target})",
+      "url": "https://build.fpgaarcade.com/releases/cores/${core_target}/${core_name}/${RELEASE_ZIP_NAME}|${RELEASE_ZIP_NAME}",
+      "color": null,
+      "fields": [
+        {
+          "name": "Download",
+          "value": "[${RELEASE_ZIP_NAME}](https://build.fpgaarcade.com/releases/cores/${core_target}/${core_name}/${RELEASE_ZIP_NAME})"
+        },
+        {
+          "name": "Previous Releases",
+          "value": "https://build.fpgaarcade.com/releases/cores/${core_target}/${core_name}/"
+        }
+      ]
+    }
+  ]
+}
+EOF
+
+curl -X POST --header "Content-Type: application/json" --data "${DISCORD_MESSAGE}" ${discordreleasewebhook}
