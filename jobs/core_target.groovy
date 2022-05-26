@@ -103,6 +103,8 @@ pipeline {
 
 
           cleanup {
+            cleanWs()
+
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
               // REVIEW: This results in an insecure credential usage warning however
               //         the send step does not appear to suppor env expansion
