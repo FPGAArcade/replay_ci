@@ -16,7 +16,7 @@ pipeline {
           stage('Checkout: common') {
             steps {
               dir(env.REPO_REPLAY_CI_NAME) {
-                git branch: env.REPO_REPLAY_CI_BRANCH, url: env.REPO_REPLAY_CI_URL
+                git branch: env.REPO_REPLAY_CI_BRANCH, url: env.REPO_REPLAY_CI_URL changelog: false, poll: false
               }
               dir(env.REPO_REPLAY_COMMON_NAME) {
                 checkout([
