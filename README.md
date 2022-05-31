@@ -42,6 +42,7 @@ json list of repositories to monitor for cores.
   - Pipeline
   - Pipeline Utility Steps
   - Simple Theme
+  - Workspace Cleanup
 
 
 ## Configuration

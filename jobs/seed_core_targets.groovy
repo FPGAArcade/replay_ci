@@ -228,7 +228,7 @@ def coreNameFromPath(path) {
 def generateBuildMeta(repo, core, core_target, config) {
   def working_dir = new File("${WORKSPACE}/${repo.name}/${core.path}")
 
-  def p = "python rmake.py infer --target ${core_target} --seed".execute([], working_dir)
+  def p = "python3 rmake.py infer --target ${core_target} --seed".execute([], working_dir)
 
   // TODO: timeout
   def sbStd = new StringBuffer()

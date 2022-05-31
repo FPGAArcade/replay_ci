@@ -2,6 +2,10 @@
 pipeline {
     agent none
 
+    options {
+      skipDefaultCheckout()
+    }
+
     stages {
       stage('Build and Package') {
         agent any
@@ -82,7 +86,7 @@ pipeline {
           }
           stage('Packaging') {
             steps {
-              sh script:"rm *.zip"
+              sh script:"rm *.zip || true"
 
               dir("${env.REPO_NAME}/${env.CORE_PATH}") {
                 sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/package_core.sh'"
@@ -99,11 +103,11 @@ pipeline {
             //         needs to be using external artifact management/promotion
             //         perhaps via backend api?
             stash name: "artifacts", includes: "*.zip"
+            stash name: "publish-script", includes: 'replay_ci/scripts/publish_core.sh'
           }
 
-
           cleanup {
-            cleanWs()
+            sh script:"ls"
 
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
               // REVIEW: This results in an insecure credential usage warning however
@@ -129,7 +133,10 @@ pipeline {
         }
         agent any
         steps {
+          sh script:"ls"
           unstash "artifacts"
+          unstash "publish-script"
+          sh script:"ls"
 
           withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                            string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
