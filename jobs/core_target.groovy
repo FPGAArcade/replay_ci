@@ -128,9 +128,14 @@ pipeline {
 
       // TODO: Milestone/lock to cancel any still pending old deploys
       stage('Publish') {
+        milestone()
+
         input {
           message "Publish this build as a stable release?"
         }
+
+        milestone()
+
         agent any
         steps {
           sh script:"ls"
