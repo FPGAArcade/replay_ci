@@ -16,7 +16,7 @@ pipeline {
           stage('Checkout: common') {
             steps {
               dir(env.REPO_REPLAY_CI_NAME) {
-                git branch: env.REPO_REPLAY_CI_BRANCH, url: env.REPO_REPLAY_CI_URL changelog: false, poll: false
+                git branch: env.REPO_REPLAY_CI_BRANCH, url: env.REPO_REPLAY_CI_URL, changelog: false, poll: false
               }
               dir(env.REPO_REPLAY_COMMON_NAME) {
                 checkout([
@@ -121,6 +121,8 @@ pipeline {
                           successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'),
                           title: "${job_name} #${BUILD_NUMBER}"
             }
+
+            milestone(1)
           }
         }
       }
@@ -128,16 +130,14 @@ pipeline {
 
       // TODO: Milestone/lock to cancel any still pending old deploys
       stage('Publish') {
-        milestone()
-
         input {
           message "Publish this build as a stable release?"
         }
 
-        milestone()
-
         agent any
         steps {
+          milestone(2)
+
           sh script:"ls"
           unstash "artifacts"
           unstash "publish-script"
