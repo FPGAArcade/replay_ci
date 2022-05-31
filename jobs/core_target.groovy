@@ -34,6 +34,7 @@ pipeline {
               sh "cp \"${env.REPO_REPLAY_CI_NAME}/scripts/local_settings.py\" \"${env.REPO_REPLAY_COMMON_NAME}/scripts/local_settings.py\""
             }
           }
+
           stage("Checkout: core") {
             when {
               not { equals expected: env.REPO_REPLAY_COMMON_NAME, actual: env.REPO_NAME }
@@ -54,6 +55,7 @@ pipeline {
               }
             }
           }
+
           // HACK: The "psx" core in replay_console requires a 3rd repo.
           // This is not yet supported thus this hack to hard code an extra
           // repo until the seed job is upgraded to read a jenkins configuration file
@@ -76,6 +78,7 @@ pipeline {
               }
             }
           }
+
           stage('Building') {
             steps {
               dir("${env.REPO_NAME}/${env.CORE_PATH}") {
@@ -84,6 +87,7 @@ pipeline {
               }
             }
           }
+
           stage('Packaging') {
             steps {
               sh script:"rm *.zip || true"
@@ -95,24 +99,20 @@ pipeline {
             }
           }
         }
+
         post {
           success {
             archiveArtifacts artifacts: '*.zip', followSymlinks: false
 
-            // REVIEW: This is meant for "small" files only. Several MB+ really
-            //         needs to be using external artifact management/promotion
-            //         perhaps via backend api?
             stash name: "artifacts", includes: "*.zip"
             stash name: "publish-script", includes: 'replay_ci/scripts/publish_core.sh'
           }
 
           cleanup {
-            sh script:"ls"
-
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
               // REVIEW: This results in an insecure credential usage warning however
-              //         the send step does not appear to suppor env expansion
-              //         precluding '' usage.
+              //         the send step does suppor env expansion at time of writing
+              //         precluding safer '' usage.
               discordSend webhookURL: "${discordbuildwebhookurl}",
                           description: "Pipeline Build Notification",
                           enableArtifactsList: true,
@@ -127,8 +127,6 @@ pipeline {
         }
       }
 
-
-      // TODO: Milestone/lock to cancel any still pending old deploys
       stage('Publish') {
         input {
           message "Publish this build as a stable release?"
@@ -136,12 +134,11 @@ pipeline {
 
         agent any
         steps {
+          // Cause any old jobs still pending promotion to abort
           milestone(2)
 
-          sh script:"ls"
           unstash "artifacts"
           unstash "publish-script"
-          sh script:"ls"
 
           withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                            string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
