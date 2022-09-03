@@ -195,7 +195,7 @@ def generateBuildMeta(repo, core, core_target, config) {
 
   def working_dir = new File("${config.workspacePath}/${repo.name}/${core.path}")
 
-  def p = "python rmake.py infer --target ${core_target} --seed".execute([], working_dir)
+  def p = "python3 rmake.py infer --target ${core_target} --seed".execute([], working_dir)
 
   // TODO: timeout
   def sbStd = new StringBuffer()
@@ -262,9 +262,6 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             // TODO: Move release notification handling into release API as event based on new build post.
             shell("""\
                   #!/bin/bash
-                  export PATH="/opt/sv2v":"/home/jenkins/.pyenv/bin:$PATH"
-                  eval "$(pyenv init -)"
-                  eval "$(pyenv virtualenv-init -)"
 
                   hash curl 2>/dev/null || { echo >&2 "curl (curl) required but not found.  Aborting."; exit 1; }
                   hash xmllint 2>/dev/null || { echo >&2 "xmllint (libxml2-utils) required but not found.  Aborting."; exit 1; }
@@ -409,17 +406,14 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
     steps {
       shell("""\
             #!/bin/bash
-            export PATH="/opt/sv2v":"/home/jenkins/.pyenv/bin:$PATH"
-            eval "$(pyenv init -)"
-            eval "$(pyenv virtualenv-init -)"
 
             # Crude packaging script for releases
             hash zip 2>/dev/null || { echo >&2 "zip required but not found.  Aborting."; exit 1; }
             hash git 2>/dev/null || { echo >&2 "git required but not found.  Aborting."; exit 1; }
-            hash python 2>/dev/null || { echo >&2 "python required but not found.  Aborting."; exit 1; }
+            hash python3 2>/dev/null || { echo >&2 "python required but not found.  Aborting."; exit 1; }
 
-            python_major_v=\$(python -c"import sys; print(sys.version_info.major)")
-            python_minor_v=\$(python -c"import sys; print(sys.version_info.minor)")
+            python_major_v=\$(python3 -c"import sys; print(sys.version_info.major)")
+            python_minor_v=\$(python3 -c"import sys; print(sys.version_info.minor)")
 
             if [[ "\${python_major_v}" -lt "3" || ("\${python_major_v}" -eq "3" && "\${python_minor_v}" -lt "6") ]]; then
                 echo "Build system requires python 3.6 or greater (\${python_major_v}.\${python_minor_v} installed)"
@@ -449,7 +443,7 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             ######################################################################
 
             pushd "${repo.name}/${core.path}" || exit \$?
-            python rmake.py infer --target "${core_target}" || exit \$?
+            python3 rmake.py infer --target "${core_target}" || exit \$?
             popd
 
             ######################################################################
