@@ -262,6 +262,10 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
             // TODO: Move release notification handling into release API as event based on new build post.
             shell("""\
                   #!/bin/bash
+                  export PATH="/opt/sv2v":"/home/jenkins/.pyenv/bin:$PATH"
+                  eval "$(pyenv init -)"
+                  eval "$(pyenv virtualenv-init -)"
+
                   hash curl 2>/dev/null || { echo >&2 "curl (curl) required but not found.  Aborting."; exit 1; }
                   hash xmllint 2>/dev/null || { echo >&2 "xmllint (libxml2-utils) required but not found.  Aborting."; exit 1; }
 
@@ -405,6 +409,10 @@ def createCoreTargetJob(repo, core, core_target, source_includes, config) {
     steps {
       shell("""\
             #!/bin/bash
+            export PATH="/opt/sv2v":"/home/jenkins/.pyenv/bin:$PATH"
+            eval "$(pyenv init -)"
+            eval "$(pyenv virtualenv-init -)"
+
             # Crude packaging script for releases
             hash zip 2>/dev/null || { echo >&2 "zip required but not found.  Aborting."; exit 1; }
             hash git 2>/dev/null || { echo >&2 "git required but not found.  Aborting."; exit 1; }
