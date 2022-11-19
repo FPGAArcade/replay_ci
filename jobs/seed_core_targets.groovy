@@ -167,12 +167,16 @@ def createCoreJobs(config, repo, repo_replay_ci, repo_common, repo_psfpga) {
                                 core, core_target, source_includes, config
                               )
 
-      // // If new job created rather than updated/removed, trigger build
-      // // NOTE: In the case of job update, it shouldn't matter if existing
-      // //       build job triggers before or after seed job when srcs/deps change.
-      // if (!jenkins.model.Jenkins.instance.getItemByFullName(job_name)) {
-      //   queue(job_name)
-      // }
+      // If new job created rather than updated/removed, trigger build
+      // NOTE: In the case of job update, it shouldn't matter if existing
+      //       build job triggers before or after seed job when srcs/deps change.
+      def job = Jenkins.instance.getItemByFullName(job_name)
+
+      if (job && job.getBuilds().size() == 0 && !job.isBuilding() && !job.isInQueue()) {
+        println "New job (${job.getFullDisplayName()}) found, scheduling build."
+        println job.scheduleBuild2(10) 
+      }
+
     }
 
   }
@@ -259,19 +263,27 @@ def parseBuildMetaPaths(meta_filename, config) {
 
 def createCoreTargetJob(repo, repo_replay_ci, repo_common, repo_psfpga,
                         core, core_target, source_includes, config) {
-  jobDsl targets: ['replay_ci/jobs/core_target_dsl.groovy'].join('\n'),
-         additionalParameters: [param_repo: repo,
-                                param_core: core,
-                                param_core_target: core_target,
-                                param_source_includes: source_includes,
-                                param_config: config,
-                                param_repo_replay_ci: repo_replay_ci,
-                                param_repo_replay_common: repo_common,
-                                param_repo_psfpga: repo_psfpga],
-         failOnSeedCollision: true,
-         removedConfigFilesAction: 'DELETE',
-         removedJobAction: 'DELETE',
-         removedViewAction: 'DELETE'
+  
+  jobDsl  targets: ['replay_ci/jobs/core_target_dsl.groovy'].join('\n'),
+          additionalParameters: [
+            param_repo: repo,
+            param_core: core,
+            param_core_target: core_target,
+            param_source_includes: source_includes,
+            param_config: config,
+            param_repo_replay_ci: repo_replay_ci,
+            param_repo_replay_common: repo_common,
+            param_repo_psfpga: repo_psfpga
+          ],
+          failOnSeedCollision: true,
+          removedConfigFilesAction: 'DELETE',
+          removedJobAction: 'DELETE',
+          removedViewAction: 'DELETE'
+
+  // TODO: Any way to get the job name back from jobDSL run? Or pass in from
+  //       here and split to build folders?
+  String job_folder = "${repo.owner}-${repo.name}"
+  return "${job_folder}/${core.name}/${core_target}"
 }
 
 // -----------------------------------------------------------------------------
