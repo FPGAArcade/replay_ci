@@ -61,11 +61,11 @@ pipelineJob("${job_folder}/${param_core.name}/${param_core_target}") {
       triggers {
         if (param_config.isProduction)
           githubPush()
-        else {
-          pollSCM {
-            scmpoll_spec('*/2 * * * *')
-          }
-        }
+        // else {
+          // pollSCM {
+          //   scmpoll_spec('*/2 * * * *')
+          // }
+        // }
       }
     }
   }
