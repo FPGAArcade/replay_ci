@@ -27,7 +27,7 @@ pipeline {
                     url          : env.REPO_REPLAY_COMMON_URL
                   ]],
                   extensions: [
-                    [$class: 'PathRestriction', excludedRegions: '', includedRegions: env.REPO_REPLAY_COMMON_SOURCE_INCLUDES]
+                    [$class: 'PathRestriction', excludedRegions: '', includedRegions: env.REPO_REPLAY_COMMON_SOURCE_INCLUDES.split(';').join('\n')]
                   ]
                 ])
               }
@@ -49,7 +49,7 @@ pipeline {
                     url          : env.REPO_URL
                   ]],
                   extensions: [
-                    [$class: 'PathRestriction', excludedRegions: '', includedRegions: env.REPO_SOURCE_INCLUDES]
+                    [$class: 'PathRestriction', excludedRegions: '', includedRegions: env.REPO_SOURCE_INCLUDES.split(';').join('\n')]
                   ],
                 ])
               }
@@ -72,7 +72,7 @@ pipeline {
                   branches: [[name: "*/${env.REPO_PSFPGA_BRANCH}"]],
                   userRemoteConfigs: [[credentialsId: env.REPO_PSFPGA_CREDENTIAL_ID, url: env.REPO_PSFPGA_URL]],
                   extensions: [
-                    [$class: 'PathRestriction', excludedRegions: '', includedRegions: env.REPO_PSFPGA_SOURCE_INCLUDES]
+                    [$class: 'PathRestriction', excludedRegions: '', includedRegions: env.REPO_PSFPGA_SOURCE_INCLUDES.split(';').join('\n')]
                   ]
                 ])
               }

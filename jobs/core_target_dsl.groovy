@@ -26,7 +26,7 @@ pipelineJob("${job_folder}/${param_core.name}/${param_core_target}") {
     env('repo_credential_id', param_repo.credentialId)
     env('repo_url', param_repo.url)
     env('repo_branch', param_repo.branch)
-    env('repo_source_includes', param_source_includes[param_repo.name] ? param_source_includes[param_repo.name].join('\n') : '')
+    env('repo_source_includes', param_source_includes[param_repo.name] ? param_source_includes[param_repo.name].join(';') : '')
 
     env('repo_replay_ci_name', param_repo_replay_ci.name)
     env('repo_replay_ci_url', param_repo_replay_ci.url)
@@ -37,14 +37,14 @@ pipelineJob("${job_folder}/${param_core.name}/${param_core_target}") {
     env('repo_replay_common_credential_id', param_repo_replay_common.credentialId)
     env('repo_replay_common_url', param_repo_replay_common.url)
     env('repo_replay_common_branch', param_repo_replay_common.branch)
-    env('repo_replay_common_source_includes', param_source_includes[param_repo_replay_common.name] ? param_source_includes[param_repo_replay_common.name].join('\n') : '')
+    env('repo_replay_common_source_includes', param_source_includes[param_repo_replay_common.name] ? param_source_includes[param_repo_replay_common.name].join(';') : '')
 
     env('repo_psfpga_owner', param_repo_psfpga.owner)
     env('repo_psfpga_name', param_repo_psfpga.name)
     env('repo_psfpga_credential_id', param_repo_psfpga.credentialId)
     env('repo_psfpga_url', param_repo_psfpga.url)
     env('repo_psfpga_branch', param_repo_psfpga.branch)
-    env('repo_psfpga_source_includes', param_source_includes[param_repo_psfpga.name] ? param_source_includes[param_repo_psfpga.name].join('\n') : '')
+    env('repo_psfpga_source_includes', param_source_includes[param_repo_psfpga.name] ? param_source_includes[param_repo_psfpga.name].join(';') : '')
   }
 
   definition {
