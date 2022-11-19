@@ -29,26 +29,30 @@ json list of repositories to monitor for cores.
 ## Required Plugins
 
   - Authorize Project
+  - Build Timestamp Plugin
   - Copy Artifacts
   - Credentials Binding
   - Discord Notifier
   - disk-usage
+  - Embeddable Build Status
+  - Environement Injector
   - GitHub
   - Green Balls
   - Job DSL
-  - Multiple SCMs
-  - Pipeline: Nodes and Processes
-  - Promoted Builds
+  - Pipeline
+  - Pipeline Utility Steps
   - Simple Theme
-  - Embeddable Build Status
+  - Workspace Cleanup
+
 
 ## Configuration
 
 ### Environment
 
-  - PRODUCTION_SERVER: true/false.
+  - PRODUCTION_SERVER: true/false
   - RELEASE_DIR: Path to copy promoted build zips (deprecated)
-  - RELEASE_API_URL: Base URL for api service (incl. trailing slash).
+  - RELEASE_API_URL: Base URL for api service (incl. trailing slash) to upload
+                     promoted build zips to.
 
 ### Credentials
 

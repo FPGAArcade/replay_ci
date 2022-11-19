@@ -54,7 +54,7 @@
     "url": "git@github.com:Sector14/replay_arcade.git",
     "credentialId": "sector14_replay_arcade",
     "testing": true,
-    "disabled": true
+    "disabled": false
   },
   {
     "owner": "Sector14",
