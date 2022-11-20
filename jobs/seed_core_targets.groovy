@@ -264,6 +264,13 @@ def parseBuildMetaPaths(meta_filename, config) {
 def createCoreTargetJob(repo, repo_replay_ci, repo_common, repo_psfpga,
                         core, core_target, source_includes, config) {
   
+  // TODO: Running this one core/target at a time causes the first core job
+  //       creation to mark all prior runs (for other cores) as unreferenced
+  //       and removes the job. Disabled removedJobAction until resolved.
+  //       Likely needs to know when we're doing the "last" seed job creation
+  //       and only that one should be marked with DELETE so that all jobs
+  //       are created before hand.
+  //       see: https://issues.jenkins.io/browse/JENKINS-44142
   jobDsl  targets: ['replay_ci/jobs/core_target_dsl.groovy'].join('\n'),
           additionalParameters: [
             param_repo: repo,
@@ -276,9 +283,9 @@ def createCoreTargetJob(repo, repo_replay_ci, repo_common, repo_psfpga,
             param_repo_psfpga: repo_psfpga
           ],
           failOnSeedCollision: true,
-          removedConfigFilesAction: 'DELETE',
-          removedJobAction: 'DELETE',
-          removedViewAction: 'DELETE'
+          removedConfigFilesAction: 'IGNORE',
+          removedJobAction: 'IGNORE',
+          removedViewAction: 'IGNORE'
 
   // TODO: Any way to get the job name back from jobDSL run? Or pass in from
   //       here and split to build folders?
