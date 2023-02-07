@@ -15,7 +15,7 @@ RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core_name}"
 cp "${RELEASE_ZIP}" "${RELEASE_DIR}/"
 ln -sf "${RELEASE_DIR}/${RELEASE_ZIP_NAME}" "${RELEASE_DIR}/latest"
 
-echo "Promoting build ${BUILD_NUMBER} to stable release: ${RELEASE_ZIP}"
+echo "Uploading build ${BUILD_NUMBER} to '${RELEASE_TRAIN}' release train: ${RELEASE_ZIP}"
 
 # Upload to release api
 status=`curl --silent --output /dev/stderr -w "%{http_code}" --request POST \

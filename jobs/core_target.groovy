@@ -93,7 +93,7 @@ pipeline {
               sh script:"rm *.zip || true"
 
               dir("${env.REPO_NAME}/${env.CORE_PATH}") {
-                sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/package_core.sh'"
+                sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/package_core.sh'"
                 sh script:"'${WORKSPACE}/replay_ci/scripts/package_core.sh' '${env.CORE_NAME}' '${env.CORE_TARGET}'"
               }
             }
@@ -103,7 +103,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                     string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
-                sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+                sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
                 sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'"
               }
             }
@@ -121,7 +121,7 @@ pipeline {
           cleanup {
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
               // REVIEW: This results in an insecure credential usage warning however
-              //         the send step does suppor env expansion at time of writing
+              //         the send step does not support env expansion at time of writing
               //         precluding safer '' usage.
               discordSend webhookURL: "${discordbuildwebhookurl}",
                           description: "Pipeline Build Notification",
@@ -153,7 +153,7 @@ pipeline {
 
           withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                            string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
-            sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+            sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
             sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'stable'"
           }
         }
