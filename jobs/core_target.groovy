@@ -93,8 +93,18 @@ pipeline {
               sh script:"rm *.zip || true"
 
               dir("${env.REPO_NAME}/${env.CORE_PATH}") {
-                sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/package_core.sh'"
+                sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/package_core.sh'"
                 sh script:"'${WORKSPACE}/replay_ci/scripts/package_core.sh' '${env.CORE_NAME}' '${env.CORE_TARGET}'"
+              }
+            }
+          }
+    
+          stage('Uploading') {
+            steps {
+                withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
+                    string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
+                sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+                sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'"
               }
             }
           }
@@ -111,7 +121,7 @@ pipeline {
           cleanup {
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
               // REVIEW: This results in an insecure credential usage warning however
-              //         the send step does suppor env expansion at time of writing
+              //         the send step does not support env expansion at time of writing
               //         precluding safer '' usage.
               discordSend webhookURL: "${discordbuildwebhookurl}",
                           description: "Pipeline Build Notification",
@@ -127,6 +137,7 @@ pipeline {
         }
       }
 
+      // TODO: Build stage will be removed once API and website allow promotions of development train builds
       stage('Publish') {
         input {
           message "Publish this build as a stable release?"
@@ -142,8 +153,8 @@ pipeline {
 
           withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                            string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
-            sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
-            sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+            sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+            sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'stable'"
           }
         }
 
