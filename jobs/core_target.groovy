@@ -98,6 +98,16 @@ pipeline {
               }
             }
           }
+    
+          stage('Uploading') {
+            steps {
+                withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
+                    string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
+                sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+                sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'"
+              }
+            }
+          }
         }
 
         post {
@@ -127,6 +137,7 @@ pipeline {
         }
       }
 
+      // TODO: Build stage will be removed once API and website allow promotions of development train builds
       stage('Publish') {
         input {
           message "Publish this build as a stable release?"
@@ -143,7 +154,7 @@ pipeline {
           withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                            string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
             sh script:"chmod 500 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
-            sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
+            sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'stable'"
           }
         }
 
