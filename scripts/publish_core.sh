@@ -11,9 +11,11 @@ RELEASE_ZIP_NAME=`basename ${RELEASE_ZIP}`
 # DEPRECATED: Will be removed once Jenkins migrated to docker and new api
 #             upload has user friendly front end to access builds.
 # Update "latest" sym link
-RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core_name}"
-cp "${RELEASE_ZIP}" "${RELEASE_DIR}/"
-ln -sf "${RELEASE_DIR}/${RELEASE_ZIP_NAME}" "${RELEASE_DIR}/latest"
+if [ "${RELEASE_TRAIN}" = "stable" ]; then
+  RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core_name}"
+  cp "${RELEASE_ZIP}" "${RELEASE_DIR}/"
+  ln -sf "${RELEASE_DIR}/${RELEASE_ZIP_NAME}" "${RELEASE_DIR}/latest"
+fi
 
 echo "Uploading build ${BUILD_NUMBER} to '${RELEASE_TRAIN}' release train: ${RELEASE_ZIP}"
 
