@@ -8,17 +8,17 @@ hash xmllint 2>/dev/null || { echo >&2 "xmllint (libxml2-utils) required but not
 RELEASE_ZIP=`ls "${core_name}_${core_target}_"*.zip`
 RELEASE_ZIP_NAME=`basename ${RELEASE_ZIP}`
 
-# DEPRECATED: Will be removed once Jenkins migrated to docker and new api
-#             upload has user friendly front end to access builds.
+# DEPRECATED: Provides access to cores via raw directory access via web server. Left as a fallback
+#             for manual core downloads in case of future api issues.
 # Update "latest" sym link
-if [ "${RELEASE_TRAIN}" = "stable" ]; then
-  RELEASE_DIR="/home/jenkins/www/releases/cores/${core_target}/${core_name}"
-  cp "${RELEASE_ZIP}" "${RELEASE_DIR}/"
-  ln -sf "${RELEASE_DIR}/${RELEASE_ZIP_NAME}" "${RELEASE_DIR}/latest"
-fi
+RELEASE_DIR="/home/jenkins/www/releases/builds/${RELEASE_TRAIN}/cores/${core_target}/${core_name}"
+mkdir -p "${RELEASE_DIR}"
+cp "${RELEASE_ZIP}" "${RELEASE_DIR}/"
+ln -sf "${RELEASE_DIR}/${RELEASE_ZIP_NAME}" "${RELEASE_DIR}/latest"
 
 echo "Uploading build ${BUILD_NUMBER} to '${RELEASE_TRAIN}' release train: ${RELEASE_ZIP}"
 
+# TODO: Once promotion endpoint available, only upload build for "devel" train
 # Upload to release api
 status=`curl --silent --output /dev/stderr -w "%{http_code}" --request POST \
             --header "Authorization: APIKey ${releaseapikey}" \
