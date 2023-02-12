@@ -8,6 +8,11 @@ hash xmllint 2>/dev/null || { echo >&2 "xmllint (libxml2-utils) required but not
 RELEASE_ZIP=`ls "${core_name}_${core_target}_"*.zip`
 RELEASE_ZIP_NAME=`basename ${RELEASE_ZIP}`
 
+if [ "${RELEASE_TRAIN}" = "stable" ]; then
+  echo >&2 "Stable promotions temporarily disabled. Aborting."
+  exit 1
+fi
+
 # DEPRECATED: Provides access to cores via raw directory access via web server. Left as a fallback
 #             for manual core downloads in case of future api issues.
 # Update "latest" sym link
