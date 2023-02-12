@@ -67,6 +67,6 @@ read -d '' DISCORD_MESSAGE <<EOF
   ]
 }
 EOF
+curl -X POST --header "Content-Type: application/json" --data "${DISCORD_MESSAGE}" ${discordreleasewebhook}
 fi
 
-curl -X POST --header "Content-Type: application/json" --data "${DISCORD_MESSAGE}" ${discordreleasewebhook}
