@@ -30,7 +30,8 @@ status=`curl --silent --output /dev/stderr -w "%{http_code}" --request POST \
             --form "buildinfo={
                         \"platformId\": \"${core_target}\",
                         \"coreId\": \"${core_name}\",
-                        \"buildType\": \"${RELEASE_TRAIN}\",
+                        \"buildType\": \"core\",
+                        \"releaseTrain\": \"${RELEASE_TRAIN}\",
                         \"buildDate\": \"${BUILD_TIMESTAMP}\"
                       };type=application/json" \
             --form "zipfile=@\"${RELEASE_ZIP}\";type=application/zip" \
