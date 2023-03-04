@@ -49,7 +49,7 @@ if [ "${RELEASE_TRAIN}" = "stable" ]; then
 
     infoBuildID=`cat uploaded-build-info.txt  | jq -r '.id'`
     infoDownloadURL=`cat uploaded-build-info.txt  | jq -r '.downloadURL'`
-    infoZipName=`basename ${downloadURL}`
+    infoZipName=`basename ${infoDownloadURL}`
 
     read -d '' DISCORD_MESSAGE <<EOF
 {
