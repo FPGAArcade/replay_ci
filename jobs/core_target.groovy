@@ -120,12 +120,19 @@ pipeline {
           }
 
           cleanup {
+            // TODO: This should be a notification sent by API itself on devel/stable/other train uploads
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
+              script {
+                  def resJson = myVar = readFile('build_upload_response.txt').trim()
+                  def resMap = readJSON(text: resJson)
+                  upload_buildId = resMap['id']
+              }
               // REVIEW: This results in an insecure credential usage warning however
               //         the send step does not support env expansion at time of writing
               //         precluding safer '' usage.
               discordSend webhookURL: "${discordbuildwebhookurl}",
                           description: "Pipeline Build Notification",
+                          notes: "API Build ID: ${upload_buildId}",
                           enableArtifactsList: true,
                           link: env.BUILD_URL,
                           result: currentBuild.currentResult,
