@@ -20,11 +20,10 @@ mkdir -p "${RELEASE_DIR}"
 cp "${RELEASE_ZIP}" "${RELEASE_DIR}/"
 ln -sf "${RELEASE_DIR}/${RELEASE_ZIP_NAME}" "${RELEASE_DIR}/latest"
 
-
 echo "Uploading build ${BUILD_NUMBER} to '${RELEASE_TRAIN}' release train: ${RELEASE_ZIP}"
 
 # Upload to release api
-status=`curl --silent -o response.txt -w "%{http_code}" --request POST \
+status=`curl --silent -o build_upload_response.txt -w "%{http_code}" --request POST \
             --header "x-api-key: ${releaseapikey}" \
             --form "buildinfo={
                         \"platformId\": \"${core_target}\",
@@ -38,7 +37,9 @@ status=`curl --silent -o response.txt -w "%{http_code}" --request POST \
 
 if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
   echo >&2 "API upload failed. Aborting."
+  rm build_upload_response.txt
   exit 1
 fi
 
-cat response.txt
+echo "Build uploaded. Response:-"
+cat build_upload_response.txt

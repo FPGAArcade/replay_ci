@@ -104,13 +104,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                     string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
                 sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
-                script {                  
-                  def resJson = sh(script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'", returnStdout: true).trim()
-                  echo resJson
-                  def resMap = readJSON(text: resJson)
-                  def promotion_buildId = resMap['id']
-                  echo "Build uploaded with buildId: ${promotion_buildId}"
-                }
+                sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'"                
               }
             }
           }
@@ -122,6 +116,7 @@ pipeline {
 
             stash name: "artifacts", includes: "*.zip"
             stash name: "publish-script", includes: 'replay_ci/scripts/promote_core.sh'
+            stash name: "build-upload-response", includes: 'build_upload_response.txt'
           }
 
           cleanup {
@@ -143,7 +138,7 @@ pipeline {
         }
       }
 
-      // TODO: Build stage will be removed once API and website allow promotions of development train builds
+      // TODO: Publish stage will be removed once API and website allow promotions of development train builds
       stage('Publish') {
         input {
           message "Publish this build as a stable release?"
@@ -156,7 +151,16 @@ pipeline {
 
           unstash "artifacts"
           unstash "publish-script"
+          unstash "build-upload-response"
 
+          // Using build file to pass ID through stages. Bit hacky but this is temporary
+          // as jenkins will not be used for promotion in the long run.
+          script {
+                  def resJson = myVar = readFile('build_upload_response.txt').trim()
+                  def resMap = readJSON(text: resJson)
+                  promotion_buildId = resMap['id']
+                  echo "Build uploaded with buildId: ${promotion_buildId}"
+                }
           echo "Promoting with buildId: ${promotion_buildId}"
           withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                            string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
