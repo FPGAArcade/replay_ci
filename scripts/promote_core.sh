@@ -37,27 +37,47 @@ fi
 #       Promotion will be removed entirely from Jenkins once auth'd web frontend available
 # Notify discord
 if [ "${RELEASE_TRAIN}" = "stable" ]; then
-read -d '' DISCORD_MESSAGE <<EOF
+
+    status=`curl --silent -o uploaded-build-info.txt -w "%{http_code}" \
+            --header "accept: application/json" \
+            "${RELEASE_API_URL}builds/${BUILD_ID}"`
+
+    if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
+        echo >&2 "API query failed. Aborting notification."
+        exit 1
+    fi
+
+    infoBuildID=`cat uploaded-build-info.txt  | jq -r '.id'`
+    infoDownloadURL=`cat uploaded-build-info.txt  | jq -r '.downloadURL'`
+    infoZipName=`basename ${downloadURL}`
+
+    read -d '' DISCORD_MESSAGE <<EOF
 {
   "content": "A new core stable release is available.",
   "embeds": [
     {
       "title": "${core_name} (${core_target})",
-      "url": "https://build.fpgaarcade.com/releases/cores/${core_target}/${core_name}/${RELEASE_ZIP_NAME}|${RELEASE_ZIP_NAME}",
+      "url": "${infoDownloadURL}",
       "color": null,
       "fields": [
         {
+            "name": "Build ID",
+            "value": "${infoBuildID}"
+        },
+        {
           "name": "Download",
-          "value": "[${RELEASE_ZIP_NAME}](https://build.fpgaarcade.com/releases/cores/${core_target}/${core_name}/${RELEASE_ZIP_NAME})"
+          "value": "[${infoZipName}](${infoDownloadURL})"
         },
         {
           "name": "Previous Releases",
-          "value": "https://build.fpgaarcade.com/releases/cores/${core_target}/${core_name}/"
+          "value": "https://${JENKINS_URL}/releases/cores/${core_target}/${core_name}/"
         }
       ]
     }
   ]
 }
 EOF
-curl -X POST --header "Content-Type: application/json" --data "${DISCORD_MESSAGE}" ${discordreleasewebhook}
+
+    curl -X POST --header "Content-Type: application/json" --data "${DISCORD_MESSAGE}" ${discordreleasewebhook}
+
 fi
