@@ -104,10 +104,13 @@ pipeline {
                 withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                     string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
                 sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
-                resJson = sh(returnStdout: true, script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'").trim()
-                resMap = readJSON(text: resJson)
-                promotion_buildId = resMap['id']
-                echo "Build uploaded with buildId: ${promotion_buildId}"
+                script {                  
+                  def resJson = sh(script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'", returnStdout: true).trim()
+                  echo resJson
+                  def resMap = readJSON(text: resJson)
+                  def promotion_buildId = resMap['id']
+                  echo "Build uploaded with buildId: ${promotion_buildId}"
+                }
               }
             }
           }
