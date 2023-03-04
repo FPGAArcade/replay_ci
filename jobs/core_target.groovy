@@ -104,7 +104,10 @@ pipeline {
                 withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                     string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
                 sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
-                sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'"
+                resJson = sh(returnStdout: true, script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'devel'").trim()
+                resMap = readJSON(text: resJson)
+                promotion_buildId = resMap['id']
+                echo "Build uploaded with buildId: ${promotion_buildId}"
               }
             }
           }
@@ -115,7 +118,7 @@ pipeline {
             archiveArtifacts artifacts: '*.zip', followSymlinks: false
 
             stash name: "artifacts", includes: "*.zip"
-            stash name: "publish-script", includes: 'replay_ci/scripts/publish_core.sh'
+            stash name: "publish-script", includes: 'replay_ci/scripts/promote_core.sh'
           }
 
           cleanup {
@@ -151,10 +154,11 @@ pipeline {
           unstash "artifacts"
           unstash "publish-script"
 
+          echo "Promoting with buildId: ${promotion_buildId}"
           withCredentials([string(credentialsId: 'release-api-key', variable: 'releaseapikey'),
                            string(credentialsId: 'discord-release-notification-webhook', variable: 'discordreleasewebhook')]) {
-            sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/publish_core.sh'"
-            sh script:"'${WORKSPACE}/replay_ci/scripts/publish_core.sh' 'stable'"
+            sh script:"chmod 700 '${WORKSPACE}/replay_ci/scripts/promote_core.sh'"
+            sh script:"'${WORKSPACE}/replay_ci/scripts/promote_core.sh' 'stable' '${promotion_buildId}'"
           }
         }
 
