@@ -70,7 +70,7 @@ if [ "${RELEASE_TRAIN}" = "stable" ]; then
         },
         {
           "name": "Previous Releases",
-          "value": "https://${JENKINS_URL}/releases/cores/${core_target}/${core_name}/"
+          "value": "${JENKINS_URL}releases/cores/${core_target}/${core_name}/"
         }
       ]
     }
