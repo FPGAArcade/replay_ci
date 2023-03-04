@@ -131,7 +131,7 @@ pipeline {
               //         the send step does not support env expansion at time of writing
               //         precluding safer '' usage.
               discordSend webhookURL: "${discordbuildwebhookurl}",
-                          description: "Pipeline Build Notification",
+                          description: "Development Build Notification",
                           notes: "API Build ID: ${upload_buildId}",
                           enableArtifactsList: true,
                           link: env.BUILD_URL,

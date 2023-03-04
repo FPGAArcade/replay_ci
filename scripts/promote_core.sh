@@ -40,7 +40,7 @@ if [ "${RELEASE_TRAIN}" = "stable" ]; then
 
     status=`curl --silent -o uploaded-build-info.txt -w "%{http_code}" \
             --header "accept: application/json" \
-            "${RELEASE_API_URL}builds/${BUILD_ID}"`
+            "${RELEASE_API_URL}builds/${PROMOTION_BUILD_ID}"`
 
     if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
         echo >&2 "API query failed. Aborting notification."
