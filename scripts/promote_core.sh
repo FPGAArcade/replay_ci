@@ -51,9 +51,16 @@ if [ "${RELEASE_TRAIN}" = "stable" ]; then
     infoDownloadURL=`cat uploaded-build-info.txt  | jq -r '.downloadURL'`
     infoZipName=`basename ${infoDownloadURL}`
 
+    # DEPRECATED: Provides access to cores via raw directory access via web server. Left as a fallback
+    #             for manual core downloads in case of future api issues.
+    RELEASE_DIR="/home/jenkins/www/releases/builds/${RELEASE_TRAIN}/cores/${core_target}/${core_name}"
+    mkdir -p "${RELEASE_DIR}"
+    cp "/home/jenkins/www/releases/builds/devel/cores/${core_target}/${core_name}/${infoZipName}" "${RELEASE_DIR}/"
+    ln -sf "${RELEASE_DIR}/${infoZipName}" "${RELEASE_DIR}/latest"
+
     read -d '' DISCORD_MESSAGE <<EOF
 {
-  "content": "A new core stable release is available.",
+  "content": "A new core ${RELEASE_TRAIN} release is available.",
   "embeds": [
     {
       "title": "${core_name} (${core_target})",
@@ -69,8 +76,8 @@ if [ "${RELEASE_TRAIN}" = "stable" ]; then
           "value": "[${infoZipName}](${infoDownloadURL})"
         },
         {
-          "name": "Previous Releases",
-          "value": "${JENKINS_URL}releases/cores/${core_target}/${core_name}/"
+          "name": "Stable Releases",
+          "value": "${JENKINS_URL}releases/builds/${RELEASE_TRAIN}/cores/${core_target}/${core_name}/"
         }
       ]
     }
