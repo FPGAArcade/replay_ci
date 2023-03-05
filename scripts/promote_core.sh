@@ -55,7 +55,7 @@ if [ "${RELEASE_TRAIN}" = "stable" ]; then
     #             for manual core downloads in case of future api issues.
     RELEASE_DIR="/home/jenkins/www/releases/builds/${RELEASE_TRAIN}/cores/${core_target}/${core_name}"
     mkdir -p "${RELEASE_DIR}"
-    cp "/home/jenkins/www/releases/builds/devel/cores/${core_target}/${core_name}/${infoZipName}" "${RELEASE_DIR}/"
+    cp "/home/jenkins/www/releases/builds/devel/cores/${core_target}/${core_name}/${infoZipName}" "${RELEASE_DIR}/" &&
     ln -sf "${RELEASE_DIR}/${infoZipName}" "${RELEASE_DIR}/latest"
 
     read -d '' DISCORD_MESSAGE <<EOF
