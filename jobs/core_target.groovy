@@ -117,16 +117,15 @@ pipeline {
             stash name: "artifacts", includes: "*.zip"
             stash name: "publish-script", includes: 'replay_ci/scripts/promote_core.sh'
             stash name: "build-upload-response", includes: 'build_upload_response.txt'
-          }
 
-          cleanup {
             // TODO: This should be a notification sent by API itself on devel/stable/other train uploads
             withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
               script {
-                  def resJson = myVar = readFile('build_upload_response.txt').trim()
-                  def resMap = readJSON(text: resJson)
-                  upload_buildId = resMap['id']
+                def resJson = myVar = readFile('build_upload_response.txt').trim()
+                def resMap = readJSON(text: resJson)
+                upload_buildId = resMap['id']
               }
+
               // REVIEW: This results in an insecure credential usage warning however
               //         the send step does not support env expansion at time of writing
               //         precluding safer '' usage.
@@ -139,7 +138,20 @@ pipeline {
                           successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'),
                           title: "${job_name} #${BUILD_NUMBER}"
             }
+          }
 
+          failure {
+            withCredentials([string(credentialsId: 'discord-build-notification-webhookurl', variable: 'discordbuildwebhookurl')]) {
+              discordSend webhookURL: "${discordbuildwebhookurl}",
+                          description: "Development Build Notification",
+                          enableArtifactsList: true,
+                          link: env.BUILD_URL,
+                          result: currentBuild.currentResult,
+                          successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'),
+                          title: "${job_name} #${BUILD_NUMBER}"
+            }
+          }
+          cleanup {
             milestone(1)
           }
         }
